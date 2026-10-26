@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 
 @theme inline {
-  --font-sans: 'Geist Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
   --color-base: var(--bg);
   --color-elevated: var(--surface);
   --color-elevated-2: var(--surface-2);
@@ -149,12 +149,18 @@
   .num {
     font-family: var(--font-mono);
     font-feature-settings: 'tnum' 1, 'zero' 1;
+    font-variant-numeric: tabular-nums;
   }
   .numx {
     font-family: var(--font-mono);
     font-feature-settings: 'tnum' 1, 'zero' 1;
-    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
     font-weight: 700;
+  }
+  .font-mono, code, pre {
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+    font-variant-numeric: tabular-nums;
   }
   .label {
     font-size: 10px;
