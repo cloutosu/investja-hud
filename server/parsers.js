@@ -24,6 +24,24 @@ function findLabelled($, label) {
   return found;
 }
 
+export function parseHoldingReturn(raw) {
+  if (!raw) return { returnDollar: 0, returnPercent: 0 };
+  const s = String(raw).trim();
+  const parts = s.split('(');
+  const dollarStr = parts[0] || '0';
+  const pctStr = parts[1] || '0';
+
+  const isNegDollar = /^\s*[-−]/.test(dollarStr) || /-\s*\$/.test(dollarStr);
+  const dollarNum = parseFloat(dollarStr.replace(/[^0-9.]/g, '')) || 0;
+  const returnDollar = isNegDollar ? -dollarNum : dollarNum;
+
+  const isNegPct = /[-−]/.test(pctStr);
+  const pctNum = parseFloat(pctStr.replace(/[^0-9.]/g, '')) || 0;
+  const returnPercent = isNegPct ? -pctNum : pctNum;
+
+  return { returnDollar, returnPercent };
+}
+
 export function parseDashboard(html) {
   const $ = cheerio.load(html);
   const holdings = [];
@@ -33,12 +51,22 @@ export function parseDashboard(html) {
     const c = (i) => clean($(cells[i]).text());
     const quantity = parseInt(c(2).replace(/[^0-9-]/g, ''), 10);
     if (!c(1) || !Number.isFinite(quantity)) return;
+    const totalValue = parseMoney(c(3));
+    const currentPrice = parseMoney(c(4));
+    const { returnDollar, returnPercent } = parseHoldingReturn(c(5));
+    const costBasis = totalValue - returnDollar;
+    const avgBuyPrice = quantity > 0 && costBasis > 0 ? costBasis / quantity : undefined;
+
     holdings.push({
       exchange: c(0),
       ticker: c(1),
       quantity,
-      totalValue: parseMoney(c(3)),
-      currentPrice: parseMoney(c(4)),
+      totalValue,
+      currentPrice,
+      returnDollar,
+      returnPercent,
+      costBasis,
+      avgBuyPrice,
     });
   });
   const cash = findLabelled($, 'Cash:');

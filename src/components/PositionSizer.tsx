@@ -154,6 +154,18 @@ export function PositionSizer({
               <dd className="text-right text-ink font-mono">{money(value)} CAD</dd>
               <dt className="text-ink-3">Exchange Fee</dt>
               <dd className="text-right text-ink-3 font-mono">$25.00 CAD</dd>
+              {action === 'sell' && held?.returnDollar !== undefined && (
+                <>
+                  <dt className="text-ink-3">All-Time Return on Stock</dt>
+                  <dd
+                    className={`text-right font-bold font-mono ${
+                      held.returnDollar > 0 ? 'text-gain' : held.returnDollar < 0 ? 'text-loss' : 'text-ink-3'
+                    }`}
+                  >
+                    {held.returnDollar > 0 ? '+' : ''}{money(held.returnDollar)} ({held.returnPercent !== undefined ? `${held.returnPercent > 0 ? '+' : ''}${held.returnPercent.toFixed(1)}%` : '0%'})
+                  </dd>
+                </>
+              )}
               <dt className="text-ink font-semibold pt-1 border-t border-line">
                 {action === 'buy' ? 'Total Required' : 'Estimated Net Proceeds'}
               </dt>

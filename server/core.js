@@ -85,6 +85,8 @@ export function makeClient({ baseUrl, user, pass }) {
   }
 
   return {
+    call,
+    get,
     async login() {
       jar.clear();
       await call('/private/game/login');

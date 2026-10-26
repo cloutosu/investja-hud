@@ -17,6 +17,10 @@ export interface Holding {
   quantity: number;
   totalValue: number;
   currentPrice: number;
+  returnDollar?: number;
+  returnPercent?: number;
+  costBasis?: number;
+  avgBuyPrice?: number;
 }
 export interface Portfolio {
   cash: number;
