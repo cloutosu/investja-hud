@@ -17,6 +17,12 @@ import { MoversPanel } from './components/MoversPanel';
 import { ThreatRadar } from './components/ThreatRadar';
 import { DailyReport } from './components/DailyReport';
 import { TakeProfit } from './components/TakeProfit';
+import { PositionChart } from './components/PositionChart';
+import { TradeJournal } from './components/TradeJournal';
+import { RivalWatch } from './components/RivalWatch';
+import { CloseBanner } from './components/CloseBanner';
+import { useToast } from './components/Toaster';
+import { deliver, registerSW } from './lib/notify';
 
 const POLL_MS = 2000; // 2 seconds ultra-fast live update
 const PULSE_MS = 3000;
@@ -47,6 +53,8 @@ export default function App() {
   const [movers, setMovers] = useState<MoversData | null>(null);
   const [trades, setTrades] = useState<{ buys: number; sells: number } | null>(null);
   const [holds, setHolds] = useState<Record<string, number>>({});
+  const [chartTicker, setChartTicker] = useState<string | null>(null);
+  const toast = useToast();
   const [syncedAt, setSyncedAt] = useState<number | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +79,7 @@ export default function App() {
     lastTs.current = 0;
   }, []);
   useEffect(() => { setUnauthorizedHandler(lock); }, [lock]);
+  useEffect(() => { void registerSW(); }, []);
 
   // Queue listener for scheduled count badge
   useEffect(() => {
@@ -124,6 +133,7 @@ export default function App() {
       setMovers(d.movers);
       setTrades(d.trades);
       setHolds(d.holds ?? {});
+      void deliver(d.events, targetAcc, (e) => toast(`${e.title}: ${e.body}`, e.type === 'drawdown' || e.type === 'rank' ? 'warn' : 'info'));
       setSyncedAt(d.timestamp);
       api.history(targetAcc).then((h) => setHistory(h.points)).catch(() => {});
     } catch (e) {
@@ -237,6 +247,8 @@ export default function App() {
             />
           </div>
 
+          <CloseBanner portfolio={portfolio} holds={holds} />
+
           {/* Tablet & Desktop Navigation Strip */}
           <div className="hidden md:flex items-center justify-between gap-3 rounded-2xl border border-line-strong bg-elevated/80 p-2 backdrop-blur-md shadow-sm">
             <div className="flex items-center gap-2">
@@ -311,7 +323,16 @@ export default function App() {
             <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12 md:gap-5 lg:gap-6">
               <div className="flex flex-col gap-4 sm:gap-5 md:col-span-7 lg:col-span-8 lg:gap-6">
                 <div className={show('home')}>
-                  <PortfolioCard portfolio={portfolio} pulse={pulse} canTrade={canTrade} holds={holds} onSell={setTrade} />
+                  <PortfolioCard
+                    portfolio={portfolio}
+                    pulse={pulse}
+                    canTrade={canTrade}
+                    holds={holds}
+                    account={currentAccountId}
+                    onOpen={setChartTicker}
+                    onDone={() => { void pollLiveData(currentAccountId); setScheduleTick((n) => n + 1); }}
+                    onSell={setTrade}
+                  />
                 </div>
                 <div className={show('board')}>
                   <Leaderboard teams={teams} myTeam={activeTeamName} onOpenTeam={setHistoryTeam} />
@@ -335,6 +356,12 @@ export default function App() {
                 <div className={show('report')}>
                   <TakeProfit portfolio={portfolio} account={currentAccountId} canTrade={canTrade} />
                 </div>
+                <div className={show('board')}>
+                  <RivalWatch teams={teams} history={history} myTeam={activeTeamName} onOpenTeam={setHistoryTeam} />
+                </div>
+                <div className={show('report')}>
+                  <TradeJournal account={currentAccountId} canTrade={canTrade} refreshKey={scheduleTick} />
+                </div>
                 <div className={show('report')}>
                   <DailyReport portfolio={portfolio} equity={equity} anchor={anchor} trades={trades} />
                 </div>
@@ -353,6 +380,9 @@ export default function App() {
       )}
 
       <AnimatePresence>
+        {chartTicker && portfolio?.holdings.find((h) => h.ticker === chartTicker) && (
+          <PositionChart key={chartTicker} holding={portfolio.holdings.find((h) => h.ticker === chartTicker)!} account={currentAccountId} onClose={() => setChartTicker(null)} />
+        )}
         {historyTeam && <HistoryModal key={historyTeam} teamName={historyTeam} history={history} onClose={() => setHistoryTeam(null)} />}
         {trade && (
           <TradeModal

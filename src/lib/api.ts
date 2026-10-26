@@ -1,5 +1,8 @@
 import type {
   AccountMeta,
+  JournalTrade,
+  PricePoint,
+  SellReadyResult,
   HistoryPoint,
   LiveData,
   QuoteResult,
@@ -102,5 +105,17 @@ export const api = {
   takeProfit: (account?: string) =>
     request<TakeProfitRule[]>(`/api/take-profit${account ? `?account=${encodeURIComponent(account)}` : ''}`),
   disarmTakeProfit: (id: string) => request<TradeResult>(`/api/take-profit/${id}`, { method: 'DELETE' }),
+  sellReady: (account?: string) => request<SellReadyResult>('/api/sell-ready', body('POST', { account })),
+  journal: (account?: string) =>
+    request<{ trades: JournalTrade[] }>(`/api/journal${account ? `?account=${encodeURIComponent(account)}` : ''}`),
+  journalNote: (id: string, note: string, account?: string) =>
+    request<{ ok: boolean }>(`/api/journal/note${account ? `?account=${encodeURIComponent(account)}` : ''}`, body('POST', { id, note })),
+  prices: (account?: string) =>
+    request<{ points: PricePoint[] }>(`/api/prices${account ? `?account=${encodeURIComponent(account)}` : ''}`),
+  pushKey: () => request<{ key: string | null }>('/api/push/key'),
+  pushSubscribe: (subscription: PushSubscriptionJSON, account?: string) =>
+    request<{ ok: boolean }>(`/api/push/subscribe${account ? `?account=${encodeURIComponent(account)}` : ''}`, body('POST', { subscription })),
+  pushUnsubscribe: (endpoint: string) => request<{ ok: boolean }>('/api/push/unsubscribe', body('POST', { endpoint })),
+  pushTest: (account?: string) => request<{ ok: boolean }>(`/api/push/test${account ? `?account=${encodeURIComponent(account)}` : ''}`, { method: 'POST' }),
   cancelScheduled: (id: string) => request<TradeResult>(`/api/schedule-trade/${id}`, { method: 'DELETE' }),
 };

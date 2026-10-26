@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { ingest, logTrade, tickOnce, trackTeam, validateTrade, runDue } from '../../server/core.js';
-import { holdReleaseAt, validateRule } from '../../server/takeprofit.js';
+import { holdReleaseAt, rulesFromExits, validateRule } from '../../server/takeprofit.js';
+import { pushEvent } from '../../server/alerts.js';
 import { authForCode, checkLock, clearFails, recordFail, signToken, verifyToken } from '../../server/auth.js';
 import { env, getAllAccounts, openStore, resolveAccount, session } from './_shared.mjs';
 
@@ -79,6 +80,7 @@ export default async (req) => {
       return json({
         ...latest,
         holds,
+        events: (await store.get(`events:${targetAccountId}`, [])).slice(-20),
         targetAccount: targetMeta,
         accounts: getAllAccounts(),
         movers,
@@ -193,6 +195,23 @@ export default async (req) => {
         await ingest(store, await client.scrape(), Date.now(), tradeAccount.team, tradeAccount.id).catch((err) =>
           console.error('[post-trade ingest]', err.message)
         );
+        // buy-then-auto-sell: arm exits on the position we just opened
+        if (v.trade.action === 'buy' && body?.exits) {
+          const latestNow = await store.get(`latest:${tradeAccount.id}`, null);
+          const held = (latestNow?.portfolio?.holdings ?? []).find((h) => h.ticker.toUpperCase() === v.trade.ticker);
+          const log = await store.get(`trades-log:${tradeAccount.id}`, []);
+          const made = rulesFromExits(body.exits, {
+            exchange: v.trade.exchange, ticker: v.trade.ticker, account: tradeAccount.id, team: tradeAccount.team,
+            holdReleaseAt: holdReleaseAt(log, v.trade.ticker, v.trade.exchange), price: held?.currentPrice,
+          });
+          if (made.length) {
+            const all = await store.get('tp-rules', []);
+            const live = (r) => r.status !== 'done' && r.status !== 'cancelled';
+            const kinds = new Set(made.map((m) => m.kind));
+            const keep = all.filter((r) => !(r.account === tradeAccount.id && r.ticker === v.trade.ticker && kinds.has(r.kind ?? 'tp') && live(r)));
+            await store.set('tp-rules', [...keep, ...made]);
+          }
+        }
       }
       return json({
         ...result,
@@ -257,11 +276,13 @@ export default async (req) => {
 
       const log = await store.get(`trades-log:${acc.id}`, []);
       const rules = await store.get('tp-rules', []);
-      // one live rule per position: re-arming replaces the old one
-      const kept = rules.filter((r) => !(r.account === acc.id && r.ticker === v.rule.ticker && r.status !== 'done'));
+      // one live rule per position and kind: re-arming replaces the old one
+      const isLive = (r) => r.status !== 'done' && r.status !== 'cancelled';
+      const kept = rules.filter((r) => !(r.account === acc.id && r.ticker === v.rule.ticker && (r.kind ?? 'tp') === v.rule.kind && isLive(r)));
       const rule = {
         id: crypto.randomUUID(),
         ...v.rule,
+        ...(v.rule.kind === 'trail' ? { peak: held.currentPrice } : {}),
         account: acc.id,
         team: acc.team,
         createdAt: Date.now(),
@@ -278,7 +299,7 @@ export default async (req) => {
     if (path === '/api/take-profit' && req.method === 'GET') {
       const rules = await store.get('tp-rules', []);
       const dayAgo = Date.now() - 24 * 3600 * 1000;
-      return json(rules.filter((r) => r.account === targetAccountId && (r.status !== 'done' || (r.firedAt ?? 0) > dayAgo)));
+      return json(rules.filter((r) => r.account === targetAccountId && r.status !== 'cancelled' && (r.status !== 'done' || (r.firedAt ?? 0) > dayAgo)));
     }
 
     const tpDel = path.match(/^\/api\/take-profit\/([\w-]+)$/);
@@ -289,6 +310,75 @@ export default async (req) => {
       if (next.length === rules.length) return json({ success: false, message: 'not found' }, 404);
       await store.set('tp-rules', next);
       return json({ success: true, message: 'disarmed' });
+    }
+
+    if (path === '/api/sell-ready' && req.method === 'POST') {
+      if (!owner()) return forbidden();
+      const acc = resolveAccount((await req.json().catch(() => ({})))?.account || targetAccountId);
+      const client = session(acc.id);
+      await client.login();
+      const live = await client.scrape();
+      const log = await store.get(`trades-log:${acc.id}`, []);
+      const now = Date.now();
+      const results = [];
+      for (const h of live.dashboard.holdings) {
+        const rel = holdReleaseAt(log, h.ticker.toUpperCase(), h.exchange);
+        if (!rel || rel > now) continue; // only positions we KNOW are past the hold; never guess for site-side buys
+        const t = { action: 'sell', exchange: String(h.exchange), ticker: h.ticker.toUpperCase(), quantity: h.quantity };
+        const res = await client.trade(t).catch((e) => ({ success: false, message: e.message }));
+        if (res.success) await logTrade(store, { ...t, price: h.currentPrice, avg: h.avgBuyPrice }, 'sell-ready', acc.id);
+        results.push({ ticker: h.ticker, success: res.success, message: res.message });
+      }
+      if (results.some((x) => x.success)) {
+        await ingest(store, await client.scrape(), Date.now(), acc.team, acc.id).catch(() => {});
+      }
+      return json({ success: results.some((x) => x.success), results });
+    }
+
+    if (path === '/api/journal' && req.method === 'GET') {
+      const log = await store.get(`trades-log:${targetAccountId}`, []);
+      return json({ trades: log.slice(-300) });
+    }
+
+    if (path === '/api/journal/note' && req.method === 'POST') {
+      if (!owner()) return forbidden();
+      const { id, note } = (await req.json().catch(() => ({}))) ?? {};
+      if (typeof id !== 'string' || typeof note !== 'string' || note.length > 500) return json({ error: 'id and note (<= 500 chars) required' }, 400);
+      const key = `trades-log:${targetAccountId}`;
+      const log = await store.get(key, []);
+      const item = log.find((t) => t.id === id);
+      if (!item) return json({ error: 'not found' }, 404);
+      item.note = note.trim();
+      await store.set(key, log);
+      return json({ ok: true });
+    }
+
+    if (path === '/api/prices' && req.method === 'GET') {
+      return json({ points: await store.get(`px:${targetAccountId}`, []) });
+    }
+
+    if (path === '/api/push/key' && req.method === 'GET') {
+      return json({ key: e.VAPID_PUBLIC_KEY || null });
+    }
+
+    if (path === '/api/push/subscribe' && req.method === 'POST') {
+      const { subscription } = (await req.json().catch(() => ({}))) ?? {};
+      if (!subscription?.endpoint || !subscription?.keys) return json({ error: 'subscription required' }, 400);
+      const subs = (await store.get('push-subs', [])).filter((x) => x.subscription.endpoint !== subscription.endpoint);
+      subs.push({ account: targetAccountId, subscription, at: Date.now() });
+      await store.set('push-subs', subs.slice(-20));
+      return json({ ok: true });
+    }
+
+    if (path === '/api/push/unsubscribe' && req.method === 'POST') {
+      const { endpoint } = (await req.json().catch(() => ({}))) ?? {};
+      await store.set('push-subs', (await store.get('push-subs', [])).filter((x) => x.subscription.endpoint !== endpoint));
+      return json({ ok: true });
+    }
+
+    if (path === '/api/push/test' && req.method === 'POST') {
+      await pushEvent(store, targetAccountId, { type: 'test', tag: 'test', title: 'Alerts are on', body: 'You will get SELL READY, exit fills, rank drops and drawdown warnings.' });
+      return json({ ok: true });
     }
 
     const del = path.match(/^\/api\/schedule-trade\/([\w-]+)$/);

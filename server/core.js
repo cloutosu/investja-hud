@@ -1,6 +1,7 @@
 // Node 20 ESM — investja.org client, trade queue and market-data ingestion (Netlify Functions + dev server)
 import { parseDashboard, parseLeaderboard, looksLikeLoginPage, extractErrorMessage, parseTradeConfirmation } from './parsers.js';
 import { runTakeProfit } from './takeprofit.js';
+import { pushEvent, runAlerts } from './alerts.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 export const EXCHANGES = new Set(['Nasdaq', 'NYSE', 'TSX']);
@@ -181,7 +182,11 @@ export function validateTrade(b) {
 
 // store: { get(key, fallback), set(key, value), del(key), list(prefix) } holding JSON
 export async function logTrade(store, t, source, accountId = '11780') {
-  const item = { at: Date.now(), day: dayKey(Date.now()), action: t.action, exchange: t.exchange, ticker: t.ticker, quantity: t.quantity, source, account: accountId };
+  const held = ((await store.get(`latest:${accountId}`, null))?.portfolio?.holdings ?? []).find((h) => h.ticker.toUpperCase() === t.ticker);
+  const item = {
+    id: crypto.randomUUID(), at: Date.now(), day: dayKey(Date.now()), action: t.action, exchange: t.exchange, ticker: t.ticker, quantity: t.quantity, source, account: accountId,
+    price: t.price ?? held?.currentPrice ?? null, avg: t.avg ?? held?.avgBuyPrice ?? null,
+  };
   const log = await store.get(`trades-log:${accountId}`, []);
   log.push(item);
   await store.set(`trades-log:${accountId}`, log.slice(-2000));
@@ -295,6 +300,11 @@ export async function ingest(store, live, now = Date.now(), target = 'Rahman Pow
     await store.set('history', newHist);
   }
 
+  // per-position price series (same thinning as team history) drives the position chart
+  const pxKey = `px:${accountId}`;
+  const px = { t: now, p: Object.fromEntries(dashboard.holdings.map((h) => [h.ticker, h.currentPrice])) };
+  await store.set(pxKey, thin([...(await store.get(pxKey, [])), px], now));
+
   // 5-minute full-field snapshots (24 h) drive the long movers windows
   const cur = Object.fromEntries(leaderboard.map((t) => [t.name, t.equity]));
   const bucket = Math.floor(now / BUCKET);
@@ -339,8 +349,11 @@ export async function tickOnce(store, makeSession, target = 'Rahman Power Square
     await client.login();
     const trades = await runDue(store, client, accountId);
     let live = await client.scrape();
-    const tp = await runTakeProfit(store, client, live.dashboard.holdings, accountId, logTrade);
+    const prevLatest = await store.get(`latest:${accountId}`, null);
+    const emit = (ev) => pushEvent(store, accountId, ev);
+    const tp = await runTakeProfit(store, client, live.dashboard.holdings, accountId, logTrade, Date.now(), emit);
     if (tp.sold) live = await client.scrape(); // positions changed, ingest the post-sell numbers
+    await runAlerts(store, accountId, { live, prevLatest, target }).catch((e) => console.error('[alerts]', e.message));
     await ingest(store, live, Date.now(), target, accountId);
     await store.set(`status:${accountId}`, { at: Date.now(), error: null, window: windowStatus });
     if (accountId === '11780') {
