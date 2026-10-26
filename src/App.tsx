@@ -16,6 +16,7 @@ import { ScheduledTrades } from './components/ScheduledTrades';
 import { MoversPanel } from './components/MoversPanel';
 import { ThreatRadar } from './components/ThreatRadar';
 import { DailyReport } from './components/DailyReport';
+import { TakeProfit } from './components/TakeProfit';
 
 const POLL_MS = 2000; // 2 seconds ultra-fast live update
 const PULSE_MS = 3000;
@@ -295,13 +296,14 @@ export default function App() {
 
           {/* Main Layout Views */}
           {tab === 'schedule' ? (
-            <div className="w-full">
+            <div className="flex w-full flex-col gap-4 sm:gap-5">
               <ScheduledTrades
                 refreshKey={scheduleTick}
                 account={currentAccountId}
                 onScheduleNew={setTrade}
                 onTrade={setTrade}
               />
+              <TakeProfit portfolio={portfolio} account={currentAccountId} canTrade={canTrade} />
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12 md:gap-5 lg:gap-6">
@@ -327,6 +329,9 @@ export default function App() {
                     onScheduleNew={setTrade}
                     onTrade={setTrade}
                   />
+                </div>
+                <div className={show('report')}>
+                  <TakeProfit portfolio={portfolio} account={currentAccountId} canTrade={canTrade} />
                 </div>
                 <div className={show('report')}>
                   <DailyReport portfolio={portfolio} equity={equity} anchor={anchor} trades={trades} />
