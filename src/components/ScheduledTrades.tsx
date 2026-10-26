@@ -214,8 +214,10 @@ export function ScheduledTrades({ refreshKey, account, onScheduleNew, onTrade }:
           <AnimatePresence initial={false}>
             {items.map((trade) => {
               const isSell = trade.action === 'sell';
-              const countdown = timeUntil(trade.executeAt, now);
-              const isPast = trade.executeAt <= now;
+              const runAt = Math.max(trade.executeAt, trade.effectiveAt ?? 0);
+              const heldBack = runAt > trade.executeAt;
+              const countdown = timeUntil(runAt, now);
+              const isPast = runAt <= now;
               const isCancelling = cancellingId === trade.id;
 
               return (
@@ -264,7 +266,7 @@ export function ScheduledTrades({ refreshKey, account, onScheduleNew, onTrade }:
                       <div className="flex flex-wrap items-center gap-2.5 mt-1.5 text-xs text-ink-2">
                         <span className="flex items-center gap-1 font-mono text-[11px] text-ink">
                           <Clock size={12} className="text-accent" />
-                          <span>{etTime(trade.executeAt)} ET</span>
+                          <span>{etTime(runAt)} ET</span>
                         </span>
                         <span className="text-ink-3">·</span>
                         <span
@@ -278,6 +280,9 @@ export function ScheduledTrades({ refreshKey, account, onScheduleNew, onTrade }:
                         >
                           {countdown}
                         </span>
+                        {heldBack && (
+                          <span className="text-[10px] font-mono text-warn">waits for the 1 h hold (was {etTime(trade.executeAt)})</span>
+                        )}
                         {trade.attempts > 0 && (
                           <span className="text-[10px] font-mono text-warn">
                             (Attempt {trade.attempts})

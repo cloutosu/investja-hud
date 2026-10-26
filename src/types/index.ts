@@ -75,6 +75,8 @@ export interface ScheduledTrade extends ScheduleBody {
   status: 'pending' | 'retrying' | 'failed';
   lastError: string | null;
   nextAttemptAt: number;
+  /** set when the 1 h hold ends after the chosen time; the order runs then */
+  effectiveAt?: number;
 }
 export type Role = 'owner' | 'viewer';
 export type MoverKey = '1m' | '5m' | '15m' | '1h' | '6h' | '24h';

@@ -260,7 +260,12 @@ export default async (req) => {
     if (path === '/api/scheduled-trades' && req.method === 'GET') {
       const queue = await store.get('queue', []);
       const filtered = queue.filter((t) => !t.account || t.account === targetAccountId);
-      return json(filtered);
+      const log = await store.get(`trades-log:${targetAccountId}`, []);
+      // a sell can't run before its 1 h hold ends, so tell the page when it really will
+      return json(filtered.map((t) => {
+        const rel = t.action === 'sell' ? holdReleaseAt(log, t.ticker, t.exchange) : null;
+        return rel && rel > t.executeAt ? { ...t, effectiveAt: rel } : t;
+      }));
     }
 
     if (path === '/api/take-profit' && req.method === 'POST') {
