@@ -5,3 +5,5 @@ dist
 public/data.json
 *.tmp
 *.zip
+
+data

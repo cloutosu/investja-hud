@@ -7,6 +7,7 @@
     "dev": "concurrently -n web,api \"vite\" \"node --watch --env-file=.env scripts/dev-api.mjs\"",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "start": "node server/standalone.mjs",
     "mock": "node scripts/mock-investja.js"
   },
   "dependencies": {

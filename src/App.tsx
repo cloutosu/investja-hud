@@ -24,7 +24,7 @@ import { CloseBanner } from './components/CloseBanner';
 import { useToast } from './components/Toaster';
 import { deliver, registerSW } from './lib/notify';
 
-const POLL_MS = 2000; // 2 seconds ultra-fast live update
+const POLL_MS = 5000; // data only changes on the 1-minute tick, so 5 s feels live without hammering the API
 const PULSE_MS = 3000;
 const STALE_MS = 4 * 60_000;
 const MOVER_KEYS: MoverKey[] = ['1m', '5m', '15m', '1h', '6h', '24h'];

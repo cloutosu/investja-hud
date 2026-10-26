@@ -40,6 +40,14 @@ browser ──► /api/* (Netlify Functions) ──► investja.org
 
 Check `https://<site>.netlify.app/api/health`: it should say `"configured":true`. The first dashboard load triggers a scrape; charts and movement windows fill in as the minute scheduler runs (the 24h window needs a day of data).
 
+## Run it off Netlify (any always-on machine)
+
+`npm run build && npm start` serves the UI, the `/api/*` handlers and the 1-minute tick from one Node process (Node 22). State is kept as JSON files in `STORE_DIR` (default `./data`), so keep that directory on a persistent disk. Same env vars as the Netlify setup, plus optional `PORT` (8080), `TICK_MS` (60000) and `STALE_MS`.
+
+Docker: `docker build -t investja . && docker run -d --restart unless-stopped -p 8080:8080 -v investja-data:/data --env-file .env investja`.
+
+Put it behind HTTPS (Caddy, or a Cloudflare Tunnel) so the browser allows service workers and notifications. The tick only runs while the process runs, so use a host that stays up: scheduled sells, exits and alerts stop when it is off. Free hosts that sleep when idle will miss ticks.
+
 ## Local development
 
 ```bash
