@@ -25,24 +25,24 @@ export function BottomNav({ tab, onTab, onLock, onTrade, scheduledCount }: Props
         key={it.id}
         onClick={() => onTab(it.id)}
         aria-label={it.label}
-        className="relative flex flex-col items-center justify-center h-12 w-13 rounded-2xl transition-colors"
+        className="relative flex h-14 flex-1 flex-col items-center justify-center gap-0.5 transition-colors"
       >
         {isActive && (
           <motion.span
-            layoutId="nav-pill"
-            className="absolute inset-0 rounded-2xl bg-tint-2 border border-line-focus/40 shadow-sm"
+            layoutId="nav-indicator"
+            className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-accent"
             transition={{ type: 'spring', stiffness: 450, damping: 35 }}
           />
         )}
         <div className="relative">
-          <it.icon size={18} className={`relative z-10 transition-colors ${isActive ? 'text-accent' : 'text-ink-3'}`} />
+          <it.icon size={22} className={`relative z-10 transition-colors ${isActive ? 'text-accent' : 'text-ink-3'}`} />
           {it.id === 'schedule' && !!scheduledCount && scheduledCount > 0 && (
             <span className="absolute -top-1.5 -right-2.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[8px] font-bold text-black shadow-sm">
               {scheduledCount}
             </span>
           )}
         </div>
-        <span className={`relative z-10 text-[9px] font-medium tracking-tight mt-0.5 transition-colors ${isActive ? 'text-ink font-semibold' : 'text-ink-3'}`}>
+        <span className={`relative z-10 text-[10px] font-medium tracking-tight transition-colors ${isActive ? 'text-accent font-semibold' : 'text-ink-3'}`}>
           {it.label}
         </span>
       </button>
@@ -51,22 +51,25 @@ export function BottomNav({ tab, onTab, onLock, onTrade, scheduledCount }: Props
 
   return (
     <nav
-      className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-md items-center justify-between rounded-3xl border border-line-strong bg-elevated/95 px-2 py-1.5 shadow-2xl shadow-black/70 backdrop-blur-2xl md:hidden"
-      style={{ paddingBottom: 'calc(0.4rem + env(safe-area-inset-bottom, 8px))' }}
+      className="fixed inset-x-0 bottom-0 z-50 flex items-stretch border-t border-line bg-elevated px-1 pt-1 md:hidden"
+      style={{ paddingBottom: 'max(0.4rem, env(safe-area-inset-bottom))' }}
     >
       {cell(items[0])}
       {cell(items[1])}
 
       {/* Floating Glowing Trade Trigger */}
       {onTrade && (
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={onTrade}
-          aria-label="New trade"
-          className="relative -my-4 flex h-13 w-13 items-center justify-center rounded-full bg-gradient-to-br from-accent to-[#d4520e] p-1.5 shadow-lg shadow-accent/40 border-2 border-elevated-2 cursor-pointer"
-        >
-          <Plus size={22} className="text-accent-ink stroke-[2.5]" />
-        </motion.button>
+        <div className="flex flex-1 items-start justify-center">
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={onTrade}
+            aria-label="New trade"
+            className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full border-4 border-[color:var(--bg)] bg-accent cursor-pointer"
+            style={{ boxShadow: 'var(--shadow-glow)' }}
+          >
+            <Plus size={24} className="text-accent-ink stroke-[2.5]" />
+          </motion.button>
+        </div>
       )}
 
       {cell(items[2])}
@@ -75,10 +78,10 @@ export function BottomNav({ tab, onTab, onLock, onTrade, scheduledCount }: Props
       <button
         onClick={onLock}
         aria-label="Lock terminal"
-        className="flex flex-col items-center justify-center h-12 w-10 rounded-2xl text-ink-3 hover:text-ink transition-colors cursor-pointer"
+        className="flex h-14 w-14 flex-col items-center justify-center gap-0.5 text-ink-3 hover:text-ink transition-colors cursor-pointer"
       >
-        <Lock size={16} />
-        <span className="text-[9px] font-medium tracking-tight mt-0.5">Lock</span>
+        <Lock size={20} />
+        <span className="text-[10px] font-medium tracking-tight">Lock</span>
       </button>
     </nav>
   );

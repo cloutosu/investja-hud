@@ -87,6 +87,8 @@ export interface LiveData {
   anchor: DayAnchor;
   trades: { buys: number; sells: number };
   movers: MoversData | null;
+  /** ticker -> epoch ms when the 1 h hold ends, from our own buy log */
+  holds?: Record<string, number>;
   status: { at: number; error: string | null } | null;
   targetAccount?: AccountMeta;
   accounts?: AccountMeta[];

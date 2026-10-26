@@ -114,7 +114,7 @@ export function SwipeToConfirm({ label, processingLabel = 'Processing', successL
         whileTap={phase === 'idle' ? { scale: 0.96 } : undefined}
         className={`absolute z-10 flex items-center justify-center rounded-full shadow-lg ${
           phase === 'idle'
-            ? 'cursor-grab active:cursor-grabbing shadow-[0_0_16px_rgba(0,0,0,0.6)]'
+            ? 'cursor-grab active:cursor-grabbing'
             : ''
         }`}
       >

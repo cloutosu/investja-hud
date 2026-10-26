@@ -28,85 +28,88 @@
   --text-hero--line-height: 1.05;
 }
 
-/* Ember: Dark, ultra-rich obsidian with warm neon ember and emerald pulse */
-:root, [data-theme='ember'] {
+/* Midnight: deep ink with a single electric-violet accent, flat surfaces (modern fintech) */
+:root, [data-theme='midnight'] {
   color-scheme: dark;
-  --bg: #070406;
-  --surface: #10080b;
-  --surface-2: #190c10;
-  --ink: #fbf0ea;
-  --ink-2: #c4b0a7;
-  --ink-3: #7c6861;
-  --line: rgb(255 225 210 / 0.08);
-  --line-strong: rgb(255 225 210 / 0.16);
-  --line-focus: rgb(242 107 29 / 0.6);
-  --tint: rgb(255 225 210 / 0.04);
-  --tint-2: rgb(255 225 210 / 0.08);
-  --accent: #f26b1d;
-  --accent-ink: #100401;
-  --on-color: #120905;
-  --gain: #00f59b;
-  --loss: #ff4766;
-  --warn: #ffb82e;
-  --glow-a: rgb(242 107 29 / 0.28);
-  --glow-b: rgb(180 30 50 / 0.22);
-  --card-glass: rgba(16, 8, 11, 0.72);
-  --card-border: rgba(255, 225, 210, 0.1);
-  --shadow-glow: 0 0 35px rgba(242, 107, 29, 0.18);
+  --bg: #0a0c12;
+  --surface: #11141c;
+  --surface-2: #181c27;
+  --ink: #f5f7fb;
+  --ink-2: #aeb6c8;
+  --ink-3: #6f7890;
+  --line: rgb(255 255 255 / 0.07);
+  --line-strong: rgb(255 255 255 / 0.13);
+  --line-focus: rgb(124 108 255 / 0.7);
+  --tint: rgb(255 255 255 / 0.04);
+  --tint-2: rgb(255 255 255 / 0.08);
+  --accent: #7c6cff;
+  --accent-ink: #ffffff;
+  --on-color: #ffffff;
+  --gain: #2de2a0;
+  --loss: #ff5d7a;
+  --warn: #ffb84d;
+  --glow-a: rgb(124 108 255 / 0.22);
+  --glow-b: rgb(45 226 160 / 0.09);
+  --card-glass: var(--surface);
+  --card-border: rgb(255 255 255 / 0.07);
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px rgb(0 0 0 / 0.35);
+  --shadow-glow: 0 8px 28px rgb(124 108 255 / 0.28);
 }
 
-/* Frost: Refined light ice-glass with crisp arctic clarity */
+/* Frost: clean light banking, white cards on a cool grey canvas */
 [data-theme='frost'] {
   color-scheme: light;
-  --bg: #e6ebef;
-  --surface: #f3f6f8;
-  --surface-2: #ffffff;
-  --ink: #0f1518;
-  --ink-2: #48535a;
-  --ink-3: #849198;
-  --line: rgb(15 21 24 / 0.08);
-  --line-strong: rgb(15 21 24 / 0.14);
-  --line-focus: rgb(15 21 24 / 0.35);
-  --tint: rgb(15 21 24 / 0.04);
-  --tint-2: rgb(15 21 24 / 0.08);
-  --accent: #0f1518;
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f5f7fb;
+  --ink: #0e1320;
+  --ink-2: #4a5468;
+  --ink-3: #8a93a6;
+  --line: rgb(14 19 32 / 0.07);
+  --line-strong: rgb(14 19 32 / 0.13);
+  --line-focus: rgb(79 70 229 / 0.55);
+  --tint: rgb(14 19 32 / 0.04);
+  --tint-2: rgb(14 19 32 / 0.08);
+  --accent: #4f46e5;
   --accent-ink: #ffffff;
   --on-color: #ffffff;
   --gain: #059669;
   --loss: #e11d48;
   --warn: #d97706;
-  --glow-a: rgb(255 255 255 / 0.95);
-  --glow-b: rgb(125 155 175 / 0.3);
-  --card-glass: rgba(243, 246, 248, 0.8);
-  --card-border: rgba(15, 21, 24, 0.08);
-  --shadow-glow: 0 0 30px rgba(0, 0, 0, 0.06);
+  --glow-a: rgb(79 70 229 / 0.12);
+  --glow-b: rgb(5 150 105 / 0.07);
+  --card-glass: var(--surface);
+  --card-border: rgb(14 19 32 / 0.07);
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.06), 0 8px 24px rgb(16 24 40 / 0.06);
+  --shadow-glow: 0 8px 24px rgb(79 70 229 / 0.25);
 }
 
-/* Dune: Warm luxury sand with desert dusk tones */
+/* Dune: warm light, sand canvas with a terracotta accent */
 [data-theme='dune'] {
   color-scheme: light;
-  --bg: #f4eae3;
-  --surface: #fcf6f2;
-  --surface-2: #ffffff;
+  --bg: #f4ece5;
+  --surface: #fffaf6;
+  --surface-2: #f8efe8;
   --ink: #26150e;
   --ink-2: #6d574d;
   --ink-3: #a89489;
   --line: rgb(38 21 14 / 0.08);
   --line-strong: rgb(38 21 14 / 0.14);
-  --line-focus: rgb(38 21 14 / 0.35);
+  --line-focus: rgb(194 65 12 / 0.55);
   --tint: rgb(38 21 14 / 0.04);
   --tint-2: rgb(38 21 14 / 0.08);
-  --accent: #26150e;
-  --accent-ink: #fcf6f2;
+  --accent: #c2410c;
+  --accent-ink: #ffffff;
   --on-color: #ffffff;
   --gain: #15803d;
   --loss: #b91c1c;
   --warn: #b45309;
-  --glow-a: rgb(235 190 145 / 0.6);
-  --glow-b: rgb(240 205 195 / 0.6);
-  --card-glass: rgba(252, 246, 242, 0.82);
-  --card-border: rgba(38, 21, 14, 0.09);
-  --shadow-glow: 0 0 30px rgba(38, 21, 14, 0.08);
+  --glow-a: rgb(194 65 12 / 0.12);
+  --glow-b: rgb(21 128 61 / 0.06);
+  --card-glass: var(--surface);
+  --card-border: rgb(38 21 14 / 0.08);
+  --shadow-card: 0 1px 2px rgb(38 21 14 / 0.06), 0 8px 24px rgb(38 21 14 / 0.07);
+  --shadow-glow: 0 8px 24px rgb(194 65 12 / 0.25);
 }
 
 @layer base {
@@ -116,6 +119,8 @@
   }
   body {
     background: var(--bg);
+    background-image: radial-gradient(70vmax 50vmax at 100% -5%, var(--glow-a), transparent 70%);
+    background-attachment: fixed;
     color: var(--ink);
     font-family: var(--font-sans);
     font-size: 14px;
@@ -171,101 +176,86 @@
   }
   .card {
     background: var(--card-glass);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid var(--card-border);
-    border-radius: 24px;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    box-shadow: var(--shadow-card);
   }
   .card-spotlight {
-    background: linear-gradient(135deg, rgba(242, 107, 29, 0.08) 0%, var(--card-glass) 60%);
-    backdrop-filter: blur(28px) saturate(200%);
-    -webkit-backdrop-filter: blur(28px) saturate(200%);
-    border: 1px solid rgba(242, 107, 29, 0.35);
+    background:
+      radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 58%),
+      var(--surface);
+    border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
     border-radius: 24px;
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45), 0 0 40px rgba(242, 107, 29, 0.12);
+    box-shadow: var(--shadow-card);
   }
   .field {
     background: var(--tint);
     border: 1px solid var(--line-strong);
     border-radius: 14px;
-    padding: 0.7rem 0.9rem;
+    padding: 0.75rem 0.95rem;
     outline: none;
     width: 100%;
-    transition: all 180ms ease;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
   }
   .field:focus {
     border-color: var(--line-focus);
-    box-shadow: 0 0 15px rgba(242, 107, 29, 0.2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
   }
   .btn {
     border: 1px solid var(--line-strong);
     border-radius: 999px;
-    padding: 0.45rem 1rem;
+    padding: 0.5rem 1rem;
     font-size: 13px;
     font-weight: 500;
     color: var(--ink-2);
-    transition: all 150ms ease;
-    backdrop-filter: blur(12px);
+    background: var(--tint);
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 120ms ease;
   }
   .btn:hover:not(:disabled) {
     color: var(--ink);
     border-color: var(--line-focus);
     background: var(--tint-2);
-    transform: translateY(-1px);
   }
-  .btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
   .btn:disabled { opacity: 0.4; }
   .btn-primary {
-    background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%);
+    background: var(--accent);
     color: var(--accent-ink);
     border-radius: 999px;
-    padding: 0.5rem 1.15rem;
+    padding: 0.55rem 1.2rem;
     font-size: 13px;
     font-weight: 600;
-    box-shadow: 0 4px 18px rgba(242, 107, 29, 0.35);
-    transition: all 150ms ease;
+    box-shadow: var(--shadow-glow);
+    transition: filter 150ms ease, transform 120ms ease;
   }
-  .btn-primary:hover {
-    filter: brightness(1.12);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 22px rgba(242, 107, 29, 0.45);
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-primary:active { transform: scale(0.97); }
+  .pb-safe { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+  .scroll-x {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
-  .btn-primary:active { transform: translateY(0) scale(0.97); }
+  .scroll-x::-webkit-scrollbar { display: none; }
 }
 
-/* Ambient cyber glow background */
+/* Touch devices: 44px targets, and 16px inputs so iOS Safari doesn't zoom on focus */
+@media (pointer: coarse) {
+  .btn, .btn-primary { min-height: 44px; }
+  input, select, textarea, .field { font-size: 16px; }
+}
+
+/* Ambient backdrop: two static radial washes, no blur or animation */
 .ambient {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  overflow: hidden;
-}
-.ambient::before, .ambient::after {
-  content: '';
-  position: absolute;
-  width: 75vmax;
-  height: 75vmax;
-  border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.75;
-}
-.ambient::before {
-  right: -25vmax;
-  top: -30vmax;
-  background: radial-gradient(closest-side, var(--glow-a), transparent);
-  animation: drift 28s ease-in-out infinite alternate;
-}
-.ambient::after {
-  left: -30vmax;
-  bottom: -35vmax;
-  background: radial-gradient(closest-side, var(--glow-b), transparent);
-  animation: drift 34s ease-in-out infinite alternate-reverse;
-}
-@keyframes drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(-5vmax, 4vmax, 0) scale(1.1); }
+  background:
+    radial-gradient(60vmax 60vmax at 105% -10%, var(--glow-a), transparent 70%),
+    radial-gradient(55vmax 55vmax at -10% 110%, var(--glow-b), transparent 70%);
 }
 
 /* Cyber grid mesh overlay */
@@ -309,5 +299,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient::before, .ambient::after, .chev, .orb, .sheen-text { animation: none; }
+  .chev, .orb, .sheen-text { animation: none; }
 }
