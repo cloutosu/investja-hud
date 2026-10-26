@@ -69,7 +69,7 @@ export function PositionSizer({
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-tint/60 p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-line bg-tint/60 p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="label">Live Position Sizer</span>

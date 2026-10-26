@@ -85,7 +85,7 @@ export function TradeModal({ portfolio, equity, init, canTrade = true, account =
         onElevate?.();
         toast('Unlocked as Owner');
       } else {
-        setPinError('Incorrect code. Enter Owner PIN (455535).');
+        setPinError('Incorrect code. Enter the owner PIN.');
       }
     } catch (e) {
       setPinError((e as Error).message);
@@ -414,7 +414,7 @@ export function TradeModal({ portfolio, equity, init, canTrade = true, account =
                   <Lock size={14} /> Owner Authorization Required
                 </div>
                 <p className="text-[11px] text-ink-3 mb-3">
-                  Terminal is currently in view-only mode. Enter Owner PIN (455535) to unlock instant trading.
+                  Terminal is currently in view-only mode. Enter the owner PIN to unlock instant trading.
                 </p>
                 <div className="flex items-center gap-2 max-w-xs mx-auto">
                   <input

@@ -22,7 +22,7 @@ const AVAILABLE_ACCOUNTS: AccountChoice[] = [
     id: '11780',
     name: 'Rahman Power Squared',
     displayUser: '11780',
-    roleHint: 'Owner: 455535 · View: 11780',
+    roleHint: 'Owner PIN · View ID',
     icon: Trophy,
     color: 'from-amber-500/20 to-orange-500/10 border-amber-500/40 text-amber-400',
   },
@@ -30,7 +30,7 @@ const AVAILABLE_ACCOUNTS: AccountChoice[] = [
     id: '11778',
     name: 'Rahman Power',
     displayUser: '11788',
-    roleHint: 'Owner: 989154 · View: 11788',
+    roleHint: 'Owner PIN · View ID',
     icon: Zap,
     color: 'from-cyan-500/20 to-blue-500/10 border-cyan-500/40 text-cyan-400',
   },
@@ -142,7 +142,7 @@ export function PinAuth({ onUnlock }: { onUnlock: (role: Role, accountId: string
       <div className="ambient" />
       <motion.div
         animate={shake}
-        className="relative z-10 w-full max-w-md rounded-[36px] border border-line-strong bg-elevated/95 p-6 sm:p-7 shadow-2xl shadow-black/70 backdrop-blur-3xl"
+        className="relative z-10 w-full max-w-md rounded-[36px] border border-line-strong bg-elevated p-6 sm:p-7 shadow-2xl shadow-black/70"
       >
         {/* Vault Icon Header */}
         <div className="flex items-center justify-between mb-5">
@@ -223,7 +223,7 @@ export function PinAuth({ onUnlock }: { onUnlock: (role: Role, accountId: string
                   key={i}
                   className={`num flex h-12 min-w-0 flex-1 items-center justify-center rounded-2xl border bg-tint/60 text-lg font-bold transition-all ${
                     i === code.length
-                      ? 'border-accent shadow-[0_0_12px_rgba(242,107,29,0.35)] bg-tint-2'
+                      ? 'border-accent bg-tint-2'
                       : i < code.length
                       ? 'border-line-focus text-accent'
                       : 'border-line-strong text-ink-3'
@@ -277,7 +277,7 @@ export function PinAuth({ onUnlock }: { onUnlock: (role: Role, accountId: string
                 onClick={() => void submit()}
                 disabled={!code || stage === 'checking'}
                 aria-label="Unlock"
-                className="flex h-12 sm:h-13 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-[#d4520e] text-accent-ink font-bold shadow-lg shadow-accent/25 transition-transform hover:brightness-110 disabled:opacity-40"
+                className="flex h-12 sm:h-13 items-center justify-center rounded-2xl bg-accent text-accent-ink font-bold shadow-lg shadow-accent/25 transition-transform hover:brightness-110 disabled:opacity-40"
               >
                 <CornerDownLeft size={19} />
               </motion.button>

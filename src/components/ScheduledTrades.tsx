@@ -225,7 +225,7 @@ export function ScheduledTrades({ refreshKey, account, onScheduleNew, onTrade }:
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4 backdrop-blur-md transition-all ${
+                  className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4 transition-all ${
                     isSell
                       ? 'border-loss/40 bg-loss/5 hover:border-loss/60 shadow-sm shadow-loss/5'
                       : 'border-gain/40 bg-gain/5 hover:border-gain/60 shadow-sm shadow-gain/5'

@@ -46,6 +46,7 @@ export default function App() {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [movers, setMovers] = useState<MoversData | null>(null);
   const [trades, setTrades] = useState<{ buys: number; sells: number } | null>(null);
+  const [holds, setHolds] = useState<Record<string, number>>({});
   const [syncedAt, setSyncedAt] = useState<number | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +123,7 @@ export default function App() {
       setAnchor(d.anchor);
       setMovers(d.movers);
       setTrades(d.trades);
+      setHolds(d.holds ?? {});
       setSyncedAt(d.timestamp);
       api.history(targetAcc).then((h) => setHistory(h.points)).catch(() => {});
     } catch (e) {
@@ -203,7 +205,7 @@ export default function App() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.35 }}
-          className="mx-auto flex min-h-screen max-w-7xl flex-col gap-4 p-3 pb-24 sm:gap-5 sm:p-5 md:p-6 lg:p-8"
+          className="mx-auto flex min-h-screen max-w-7xl flex-col gap-4 p-3 pb-28 sm:gap-5 sm:p-5 sm:pb-28 md:p-6 lg:p-8 md:pb-8"
         >
           {bannerWarn && (
             <div className="rounded-2xl border border-loss/40 bg-loss/10 p-3 text-xs text-loss font-mono">
@@ -287,7 +289,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setTab('schedule')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-300 text-xs font-bold hover:bg-amber-500/25 active:scale-95 transition-all shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-warn/40 bg-warn/15 text-warn text-xs font-bold hover:bg-warn/25 active:scale-95 transition-all shadow-sm cursor-pointer"
               >
                 View Scheduled ({scheduledCount})
               </button>
@@ -309,7 +311,7 @@ export default function App() {
             <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12 md:gap-5 lg:gap-6">
               <div className="flex flex-col gap-4 sm:gap-5 md:col-span-7 lg:col-span-8 lg:gap-6">
                 <div className={show('home')}>
-                  <PortfolioCard portfolio={portfolio} pulse={pulse} canTrade={canTrade} onSell={setTrade} />
+                  <PortfolioCard portfolio={portfolio} pulse={pulse} canTrade={canTrade} holds={holds} onSell={setTrade} />
                 </div>
                 <div className={show('board')}>
                   <Leaderboard teams={teams} myTeam={activeTeamName} onOpenTeam={setHistoryTeam} />

@@ -70,8 +70,15 @@ export default async (req) => {
 
       const movers = await store.get(`movers:${targetAccountId}`, await store.get('movers', null));
       const status = await store.get(`status:${targetAccountId}`, await store.get('status', null));
+      const buyLog = await store.get(`trades-log:${targetAccountId}`, []);
+      const holds = {};
+      for (const h of latest.portfolio?.holdings ?? []) {
+        const at = holdReleaseAt(buyLog, h.ticker.toUpperCase(), h.exchange);
+        if (at) holds[h.ticker] = at;
+      }
       return json({
         ...latest,
+        holds,
         targetAccount: targetMeta,
         accounts: getAllAccounts(),
         movers,
