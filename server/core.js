@@ -1,6 +1,6 @@
 // Node 20 ESM — investja.org client, trade queue and market-data ingestion (Netlify Functions + dev server)
 import { parseDashboard, parseLeaderboard, looksLikeLoginPage, extractErrorMessage, parseTradeConfirmation } from './parsers.js';
-import { runTakeProfit } from './takeprofit.js';
+import { holdReleaseAt, runTakeProfit } from './takeprofit.js';
 import { pushEvent, runAlerts } from './alerts.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -201,7 +201,10 @@ export async function logTrade(store, t, source, accountId = '11780') {
 export async function runDue(store, client, accountId = '11780') {
   const now = Date.now();
   let queue = await store.get('queue', []);
-  const due = queue.filter((t) => (!t.account || t.account === accountId) && t.status !== 'failed' && t.executeAt <= now && (t.nextAttemptAt ?? 0) <= now && (t.lockedUntil ?? 0) <= now);
+  // a sell whose 1 h hold we know is still open just waits: no point asking the server to reject it
+  const log = await store.get(`trades-log:${accountId}`, []);
+  const stillHeld = (t) => t.action === 'sell' && (holdReleaseAt(log, t.ticker, t.exchange) ?? 0) > now;
+  const due = queue.filter((t) => (!t.account || t.account === accountId) && t.status !== 'failed' && t.executeAt <= now && !stillHeld(t) && (t.nextAttemptAt ?? 0) <= now && (t.lockedUntil ?? 0) <= now);
   const summary = { executed: 0, failed: 0, waiting: queue.length };
   if (!due.length) return summary;
 
