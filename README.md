@@ -16,6 +16,13 @@ browser ──► /api/* (Netlify Functions) ──► investja.org
 - **Lock screen**: the code is checked by the server, not the browser. Two codes: `ACCESS_CODE` can trade, `VIEW_CODE` (optional) is read-only, so friends can watch without being able to touch your account. Six wrong tries lock that IP for 15 minutes.
 - Three themes (Ember, Frost, Dune), desktop and phone layouts, daily report, threat radar.
 
+## Exits, alerts and journal
+
+- **Exit rules** (take profit, stop loss, trailing stop) fire from the 1-minute tick, only after the 1 h hold, and the first fill cancels the others on that position. A buy can arm exits in the same order.
+- **Alerts**: SELL READY, exit fills, a rank drop while you are in the top 50, and a 2% equity drop in 5 minutes. Tap the bell to allow browser notifications. To get them with the tab closed, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (`npx web-push generate-vapid-keys`).
+- **Sell all ready** only sells positions whose hold we know has ended (buys placed through this app). Buys made on investja.org directly have no timer and are never bulk-sold.
+- **Trade journal** computes win rate and hold time from sells that have a logged fill price and average cost.
+
 ## Deploy on Netlify
 
 1. Push this repo to GitHub, then Netlify → Add new site → Import from Git. `netlify.toml` sets the build (`npm run build`, publish `dist`, functions in `netlify/functions`).

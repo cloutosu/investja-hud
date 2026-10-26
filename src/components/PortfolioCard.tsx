@@ -5,6 +5,8 @@ import type { Portfolio, Pulse } from '../types';
 import { HOLD_MS, etTime } from '../lib/market';
 import { int, money, signedMoney, signedPct } from '../lib/format';
 import type { TradeInit } from './TradeModal';
+import { api } from '../lib/api';
+import { useToast } from './Toaster';
 
 const BUYS_KEY = 'investja.buys';
 export function readBuys(): Record<string, number> {
@@ -28,15 +30,22 @@ interface Props {
   canTrade: boolean;
   /** server-side hold releases (ticker -> epoch ms); merged with this device's own buy record */
   holds?: Record<string, number>;
+  account?: string;
+  onOpen?: (ticker: string) => void;
+  onDone?: () => void;
   onSell: (init: TradeInit) => void;
 }
 
-export function PortfolioCard({ portfolio, pulse, canTrade, holds = {}, onSell }: Props) {
+export function PortfolioCard({ portfolio, pulse, canTrade, holds = {}, account, onOpen, onDone, onSell }: Props) {
+  const toast = useToast();
+  const [armed, setArmed] = useState(false);
+  const [selling, setSelling] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [dot, setDot] = useState<{ ticker: string; gain: boolean } | null>(null);
 
   const buys = readBuys();
   const releaseOf = (ticker: string) => Math.max(holds[ticker] ?? 0, (buys[ticker] ?? 0) + (buys[ticker] ? HOLD_MS : 0));
+  const readyTickers = (portfolio?.holdings ?? []).filter((h) => { const r = releaseOf(h.ticker); return r > 0 && r <= now; }).map((h) => h.ticker);
   const anyHeld = (portfolio?.holdings ?? []).some((h) => releaseOf(h.ticker) > now);
 
   // tick every second only while a countdown is on screen
@@ -44,6 +53,31 @@ export function PortfolioCard({ portfolio, pulse, canTrade, holds = {}, onSell }
     const id = setInterval(() => setNow(Date.now()), anyHeld ? 1000 : 15000);
     return () => clearInterval(id);
   }, [anyHeld]);
+
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 4000);
+    return () => clearTimeout(t);
+  }, [armed]);
+
+  async function sellAllReady() {
+    if (!armed) return setArmed(true);
+    setArmed(false);
+    setSelling(true);
+    try {
+      const r = await api.sellReady(account);
+      const ok = r.results.filter((x) => x.success).map((x) => x.ticker);
+      const bad = r.results.filter((x) => !x.success);
+      if (ok.length) toast(`Sold ${ok.join(', ')}`, 'info');
+      for (const b of bad) toast(`${b.ticker}: ${b.message}`, 'error');
+      if (!r.results.length) toast('Nothing ready to sell', 'info');
+      onDone?.();
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    } finally {
+      setSelling(false);
+    }
+  }
 
   useEffect(() => {
     if (!pulse?.ticker) return;
@@ -79,6 +113,18 @@ export function PortfolioCard({ portfolio, pulse, canTrade, holds = {}, onSell }
           </div>
         </div>
 
+        {canTrade && readyTickers.length > 0 && (
+          <button
+            type="button"
+            onClick={sellAllReady}
+            disabled={selling}
+            className={`order-last w-full rounded-xl border px-3 py-2.5 text-xs font-bold transition-colors sm:order-none sm:w-auto sm:py-2 cursor-pointer disabled:opacity-50 ${
+              armed ? 'border-loss bg-loss text-white' : 'border-gain/40 bg-gain/15 text-gain hover:bg-gain/25'
+            }`}
+          >
+            {selling ? 'Selling…' : armed ? `Tap again: sell ${readyTickers.length} position${readyTickers.length > 1 ? 's' : ''}` : `Sell all ready (${readyTickers.length})`}
+          </button>
+        )}
         <div className="text-right flex items-center gap-3 ml-auto">
           {holdings.length > 0 && totalReturnDollar !== 0 && (
             <div className="text-right">
@@ -126,7 +172,13 @@ export function PortfolioCard({ portfolio, pulse, canTrade, holds = {}, onSell }
               >
                 {/* Left: Ticker & Exchange & Cost Info */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-tint-2 font-mono font-extrabold text-sm text-ink border border-line-strong">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${h.ticker} price chart`}
+                    onClick={() => onOpen?.(h.ticker)}
+                    onKeyDown={(e) => e.key === 'Enter' && onOpen?.(h.ticker)}
+                    className="relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-tint-2 font-mono font-extrabold text-sm text-ink border border-line-strong transition-colors hover:border-line-focus">
                     {h.ticker.slice(0, 4)}
                     {dot?.ticker === h.ticker && (
                       <motion.span

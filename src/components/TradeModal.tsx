@@ -58,6 +58,9 @@ export function TradeModal({ portfolio, equity, init, canTrade = true, account =
   const [copied, setCopied] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [exitTp, setExitTp] = useState('');
+  const [exitSl, setExitSl] = useState('');
+  const [exitTrail, setExitTrail] = useState('');
 
   // Price detection state
   const [detectedPrice, setDetectedPrice] = useState<number | null>(null);
@@ -141,7 +144,12 @@ export function TradeModal({ portfolio, equity, init, canTrade = true, account =
   }, [ticker, exchange, portfolio]);
 
   const confirm = useCallback(async (): Promise<ConfirmResult> => {
-    const body = { action, exchange, ticker, quantity, account };
+    const exits = {
+      ...(Number(exitTp) > 0 ? { tpPct: Number(exitTp) } : {}),
+      ...(Number(exitSl) > 0 ? { slPct: Number(exitSl) } : {}),
+      ...(Number(exitTrail) > 0 ? { trailPct: Number(exitTrail) } : {}),
+    };
+    const body = { action, exchange, ticker, quantity, account, ...(buy && mode === 'now' && Object.keys(exits).length ? { exits } : {}) };
     const price = detectedPrice;
     const total = price ? (quantity * price) + (buy ? 25 : -25) : 0;
 
@@ -402,6 +410,27 @@ export function TradeModal({ portfolio, equity, init, canTrade = true, account =
                     >
                       {p.label}
                     </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Buy-then-auto-sell: exits armed on the new position the moment the buy fills */}
+            {buy && mode === 'now' && canTrade && (
+              <div className="rounded-2xl border border-line bg-tint/40 p-3">
+                <div className="mb-2 text-[10px] font-mono uppercase tracking-wider text-ink-3">
+                  Auto-exit after the 1 h hold <span className="normal-case">(optional)</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    ['Take profit %', exitTp, setExitTp, 'text-gain'],
+                    ['Stop loss %', exitSl, setExitSl, 'text-loss'],
+                    ['Trail %', exitTrail, setExitTrail, 'text-warn'],
+                  ] as const).map(([label, val, set, tone]) => (
+                    <label key={label} className="flex flex-col gap-1">
+                      <span className={`text-[10px] font-semibold ${tone}`}>{label}</span>
+                      <input inputMode="decimal" className="field py-2 text-xs font-mono" placeholder="off" value={val} onChange={(e) => set(e.target.value)} />
+                    </label>
                   ))}
                 </div>
               </div>

@@ -6,6 +6,7 @@ import { int, money, signedMoney, signedPct } from '../lib/format';
 import { etParts, etTime } from '../lib/market';
 import { setTheme, THEMES, useTheme, type ThemeId } from '../lib/theme';
 import { AnimatedNumber } from './AnimatedNumber';
+import { AlertsBell } from './AlertsBell';
 import { EquityChart, type ChartMode, type ChartPoint, type ChartRange } from './EquityChart';
 import type { TradeInit } from './TradeModal';
 
@@ -280,6 +281,7 @@ export function TopBar({
             {marketOpen ? 'MARKET OPEN' : 'PRE-MARKET (9:30 AM)'}
           </span>
 
+          <AlertsBell account={activeAccountId} />
           <ThemeDots />
 
           {canTrade && (

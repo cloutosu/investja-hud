@@ -36,7 +36,8 @@ export interface AccountMeta {
 }
 
 export type TradeAction = 'buy' | 'sell';
-export interface TradeBody { action: TradeAction; exchange: string; ticker: string; quantity: number; account?: string }
+export interface Exits { tpPct?: number; slPct?: number; trailPct?: number }
+export interface TradeBody { action: TradeAction; exchange: string; ticker: string; quantity: number; account?: string; exits?: Exits }
 export interface TradeResult {
   success: boolean;
   message: string;
@@ -89,6 +90,7 @@ export interface LiveData {
   movers: MoversData | null;
   /** ticker -> epoch ms when the 1 h hold ends, from our own buy log */
   holds?: Record<string, number>;
+  events?: AppEvent[];
   status: { at: number; error: string | null } | null;
   targetAccount?: AccountMeta;
   accounts?: AccountMeta[];
@@ -133,12 +135,17 @@ export interface Pulse {
   ticker: string | null;
 }
 
+export type ExitKind = 'tp' | 'sl' | 'trail';
 export interface TakeProfitBody {
   exchange: string;
   ticker: string;
   quantity: number | 'all';
+  kind?: ExitKind;
   targetPct?: number;
   targetPrice?: number;
+  stopPct?: number;
+  stopPrice?: number;
+  trailPct?: number;
   account?: string;
 }
 export interface TakeProfitRule {
@@ -146,11 +153,16 @@ export interface TakeProfitRule {
   exchange: string;
   ticker: string;
   quantity: number | 'all';
+  kind?: ExitKind;
   targetPct: number | null;
   targetPrice: number | null;
+  stopPct?: number | null;
+  stopPrice?: number | null;
+  trailPct?: number | null;
+  peak?: number;
   account: string;
   createdAt: number;
-  status: 'armed' | 'holding' | 'no-position' | 'done';
+  status: 'armed' | 'holding' | 'no-position' | 'done' | 'cancelled';
   attempts: number;
   lastError: string | null;
   holdReleaseAt: number | null;
@@ -159,3 +171,19 @@ export interface TakeProfitRule {
   soldQuantity?: number;
   soldPrice?: number;
 }
+
+export interface AppEvent { id: number; at: number; type: string; title: string; body: string; tag: string }
+export interface JournalTrade {
+  id: string;
+  at: number;
+  action: TradeAction;
+  exchange: string;
+  ticker: string;
+  quantity: number;
+  source: string;
+  price: number | null;
+  avg: number | null;
+  note?: string;
+}
+export interface PricePoint { t: number; p: Record<string, number> }
+export interface SellReadyResult { success: boolean; results: { ticker: string; success: boolean; message: string }[] }
