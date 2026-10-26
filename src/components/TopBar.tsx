@@ -24,6 +24,7 @@ interface Props {
   mine: Partial<Record<MoverKey, MoverRow | null>>;
   canTrade: boolean;
   onTrade: (init: TradeInit) => void;
+  onScheduleTab?: () => void;
   onLock: () => void;
   teams?: TeamWithDelta[];
   activeAccountId?: string;
@@ -95,6 +96,7 @@ export function TopBar({
   mine,
   canTrade,
   onTrade,
+  onScheduleTab,
   onLock,
   teams,
   activeAccountId = '11780',
@@ -380,7 +382,7 @@ export function TopBar({
               </button>
               <button
                 type="button"
-                onClick={() => onTrade({ mode: 'schedule' })}
+                onClick={() => (onScheduleTab ? onScheduleTab() : onTrade({ mode: 'schedule' }))}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/20 text-amber-400 text-xs font-bold hover:bg-amber-500/30 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer"
               >
                 <CalendarClock size={14} className="stroke-[2.5]" />
@@ -532,7 +534,7 @@ export function TopBar({
               type="button"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => onTrade({ mode: 'schedule' })}
+              onClick={() => (onScheduleTab ? onScheduleTab() : onTrade({ mode: 'schedule' }))}
               className="group relative flex flex-col items-center justify-center gap-2 rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-500/20 via-amber-500/10 to-transparent p-3 sm:p-4 text-center shadow-lg shadow-amber-500/10 backdrop-blur-md transition-all hover:border-amber-400 hover:from-amber-500/30 active:scale-95 cursor-pointer"
             >
               <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-black font-extrabold shadow-md shadow-amber-500/30 group-hover:scale-105 transition-transform">

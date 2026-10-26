@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { CalendarClock, Clock, House, Trophy } from 'lucide-react';
 import type { DayAnchor, HistoryPoint, MoverKey, MoversData, Portfolio, Pulse, Role, TeamWithDelta } from './types';
 import { api, session, setUnauthorizedHandler } from './lib/api';
 import { computeDeltas } from './lib/deltas';
-import { etTime, isMarketOpen } from './lib/market';
+import { isMarketOpen } from './lib/market';
 import { PinAuth } from './components/PinAuth';
 import { TopBar } from './components/TopBar';
 import { BottomNav, type Tab } from './components/BottomNav';
@@ -23,35 +24,21 @@ const MOVER_KEYS: MoverKey[] = ['1m', '5m', '15m', '1h', '6h', '24h'];
 
 const portfolioEquity = (p: Portfolio) => p.holdings.reduce((s, h) => s + h.totalValue, 0) + p.cash - p.loan;
 
-// Which holding moved the most, in the same direction as the total, at constant quantity.
-function attributeTicker(prev: Portfolio, next: Portfolio, direction: number): string | null {
-  let best: { ticker: string; amount: number } | null = null;
+function attributeTicker(prev: Portfolio, next: Portfolio, delta: number): string | null {
+  const pm = new Map(prev.holdings.map((h) => [h.ticker, h.totalValue]));
+  let best: { ticker: string; diff: number } | null = null;
   for (const h of next.holdings) {
-    const before = prev.holdings.find((p) => p.ticker === h.ticker);
-    if (!before) continue;
-    const amount = (h.currentPrice - before.currentPrice) * h.quantity;
-    if (Math.sign(amount) !== Math.sign(direction)) continue;
-    if (!best || Math.abs(amount) > Math.abs(best.amount)) best = { ticker: h.ticker, amount };
+    const diff = h.totalValue - (pm.get(h.ticker) ?? 0);
+    if (Math.sign(diff) === Math.sign(delta) && (!best || Math.abs(diff) > Math.abs(best.diff))) {
+      best = { ticker: h.ticker, diff };
+    }
   }
   return best?.ticker ?? null;
 }
 
-const ago = (ms: number) => {
-  const s = Math.max(0, Math.round(ms / 1000));
-  return s < 45 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.floor(s / 3600)} h ago`;
-};
-
 export default function App() {
-  const [role, setRole] = useState<Role | null>(() => (session.token() ? session.role() : null));
+  const [role, setRole] = useState<Role | null>(() => session.role());
   const [currentAccountId, setCurrentAccountId] = useState<string>(() => session.account() || '11780');
-
-  const prevEquitiesRef = useRef<Map<string, number>>(new Map());
-  const prevPortfolioRef = useRef<Portfolio | null>(null);
-  const prevMyEquityRef = useRef<number | null>(null);
-  const lastTs = useRef(0);
-  const inFlight = useRef(false);
-  const pulseSeq = useRef(0);
-
   const [teams, setTeams] = useState<TeamWithDelta[]>([]);
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [anchor, setAnchor] = useState<DayAnchor | null>(null);
@@ -66,6 +53,7 @@ export default function App() {
   const [historyTeam, setHistoryTeam] = useState<string | null>(null);
   const [trade, setTrade] = useState<TradeInit | null>(null);
   const [scheduleTick, setScheduleTick] = useState(0);
+  const [scheduledCount, setScheduledCount] = useState(0);
   const [tab, setTab] = useState<Tab>('home');
   const show = (t: Tab) => (tab === t ? '' : 'max-md:hidden');
   const canTrade = role === 'owner';
@@ -81,6 +69,25 @@ export default function App() {
     lastTs.current = 0;
   }, []);
   useEffect(() => { setUnauthorizedHandler(lock); }, [lock]);
+
+  // Queue listener for scheduled count badge
+  useEffect(() => {
+    let active = true;
+    const checkQueue = async () => {
+      try {
+        const q = await api.scheduledTrades(currentAccountId);
+        if (active && Array.isArray(q)) setScheduledCount(q.length);
+      } catch {
+        // quiet failure
+      }
+    };
+    void checkQueue();
+    const id = setInterval(checkQueue, 4000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [currentAccountId, scheduleTick]);
 
   const pollLiveData = useCallback(async (targetAcc = currentAccountId) => {
     if (inFlight.current) return;
@@ -118,32 +125,40 @@ export default function App() {
       api.history(targetAcc).then((h) => setHistory(h.points)).catch(() => {});
     } catch (e) {
       console.warn('[poll] failed:', (e as Error).message);
-      setError((e as Error).message);
     } finally {
       inFlight.current = false;
     }
   }, [currentAccountId]);
 
-  const handleSwitchAccount = useCallback((accId: string) => {
-    setCurrentAccountId(accId);
-    session.setAccount(accId);
+  const handleSwitchAccount = useCallback((newAccId: string) => {
+    const resolvedId = newAccId === '11788' ? '11778' : newAccId;
+    setCurrentAccountId(resolvedId);
+    session.setAccount(resolvedId);
     lastTs.current = 0;
-    prevEquitiesRef.current = new Map();
-    prevPortfolioRef.current = null;
     prevMyEquityRef.current = null;
-    void pollLiveData(accId);
+    prevPortfolioRef.current = null;
+    prevEquitiesRef.current.clear();
+    void pollLiveData(resolvedId);
+    setScheduleTick((n) => n + 1);
   }, [pollLiveData]);
+
+  const lastTs = useRef<number>(0);
+  const inFlight = useRef(false);
+  const pulseSeq = useRef(0);
+  const prevMyEquityRef = useRef<number | null>(null);
+  const prevPortfolioRef = useRef<Portfolio | null>(null);
+  const prevEquitiesRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (!role) return;
     void pollLiveData(currentAccountId);
-    const interval = setInterval(() => { if (!document.hidden) void pollLiveData(currentAccountId); }, POLL_MS);
-    return () => clearInterval(interval);
+    const id = setInterval(() => void pollLiveData(currentAccountId), POLL_MS);
+    return () => clearInterval(id);
   }, [role, pollLiveData, currentAccountId]);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 15000);
-    return () => clearInterval(id);
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -181,32 +196,21 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <div className="ambient" />
       {role && (
         <motion.div
-          className="relative z-10 mx-auto flex max-w-[1400px] flex-col gap-4 sm:gap-5 px-3 sm:px-6 pt-3 pb-28 md:pb-12 lg:gap-6"
+          key="terminal"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.35 }}
+          className="mx-auto flex min-h-screen max-w-7xl flex-col gap-4 p-3 pb-24 sm:gap-5 sm:p-5 md:p-6 lg:p-8"
         >
-          {/* Top Banner Status Bar */}
-          <div className={`num flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-full border px-3 sm:px-4 py-1.5 text-center text-[11px] sm:text-xs ${bannerWarn ? 'border-warn/30 text-warn' : 'border-line text-ink-3'}`}>
-            {error && !syncedAt ? (
-              <span>{error}</span>
-            ) : (
-              <>
-                <span className="font-semibold text-accent">{activeTeamName}</span>
-                <span>· Updated {syncedAt ? etTime(syncedAt) : '…'}</span>
-                {age !== null && <span className="hidden xs:inline">{ago(age)}</span>}
-                {role === 'viewer' && <span>· view only</span>}
-                {serverError && <span>· server: {serverError}</span>}
-                {stale && !serverError && <span>· scheduler behind</span>}
-                {error && syncedAt && <span>· refresh failed</span>}
-              </>
-            )}
-          </div>
+          {bannerWarn && (
+            <div className="rounded-2xl border border-loss/40 bg-loss/10 p-3 text-xs text-loss font-mono">
+              ⚠️ {error || serverError || `Feed stale (${Math.floor((age ?? 0) / 1000)}s old). Reconnecting…`}
+            </div>
+          )}
 
-          <div className={tab === 'home' ? '' : 'max-md:hidden'}>
+          <div>
             <TopBar
               teamName={activeTeamName}
               activeAccountId={currentAccountId}
@@ -225,36 +229,119 @@ export default function App() {
               teams={teams}
               canTrade={canTrade}
               onTrade={setTrade}
+              onScheduleTab={() => setTab('schedule')}
               onLock={lock}
             />
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12 md:gap-5 lg:gap-6">
-            <div className="flex flex-col gap-4 sm:gap-5 md:col-span-7 lg:col-span-8 lg:gap-6">
-              <div className={show('home')}>
-                <PortfolioCard portfolio={portfolio} pulse={pulse} canTrade={canTrade} onSell={setTrade} />
-              </div>
-              <div className={show('board')}>
-                <Leaderboard teams={teams} myTeam={activeTeamName} onOpenTeam={setHistoryTeam} />
-              </div>
+
+          {/* Tablet & Desktop Navigation Strip */}
+          <div className="hidden md:flex items-center justify-between gap-3 rounded-2xl border border-line-strong bg-elevated/80 p-2 backdrop-blur-md shadow-sm">
+            <div className="flex items-center gap-2">
+              {[
+                { id: 'home' as Tab, label: 'Overview', icon: House },
+                { id: 'schedule' as Tab, label: 'Scheduled Trades', icon: CalendarClock, count: scheduledCount },
+                { id: 'board' as Tab, label: 'Leaderboard & Radar', icon: Trophy },
+                { id: 'report' as Tab, label: 'Activity & Reports', icon: Clock },
+              ].map((it) => {
+                const active = tab === it.id;
+                const Icon = it.icon;
+                return (
+                  <button
+                    key={it.id}
+                    type="button"
+                    onClick={() => setTab(it.id)}
+                    className={`relative flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                      active
+                        ? 'border border-accent/60 bg-accent/20 text-ink shadow-sm ring-1 ring-accent/30'
+                        : 'border border-line/60 bg-tint/40 text-ink-3 hover:text-ink hover:bg-tint'
+                    }`}
+                  >
+                    <Icon size={14} className={active ? 'text-accent' : 'text-ink-3'} />
+                    <span>{it.label}</span>
+                    {!!it.count && it.count > 0 && (
+                      <span className="rounded-full bg-amber-500 px-1.5 py-0.2 font-mono text-[10px] font-bold text-black shadow-sm">
+                        {it.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            <div className="flex flex-col gap-4 sm:gap-5 md:col-span-5 lg:col-span-4 lg:gap-6">
-              <div className={show('board')}>
-                <MoversPanel movers={movers} myTeam={activeTeamName} onOpenTeam={setHistoryTeam} />
-              </div>
-              <div className={show('board')}>
-                <ThreatRadar teams={teams} myTeam={activeTeamName} />
-              </div>
-              {canTrade && (
-                <div className={show('report')}>
-                  <ScheduledTrades refreshKey={scheduleTick} account={currentAccountId} />
-                </div>
-              )}
-              <div className={show('report')}>
-                <DailyReport portfolio={portfolio} equity={equity} anchor={anchor} trades={trades} />
-              </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setTrade({ action: 'buy' })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gain/40 bg-gain/15 text-gain text-xs font-bold hover:bg-gain/25 active:scale-95 transition-all shadow-sm cursor-pointer"
+              >
+                + Buy Stock
+              </button>
+              <button
+                type="button"
+                onClick={() => setTrade({ action: 'sell' })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-loss/40 bg-loss/15 text-loss text-xs font-bold hover:bg-loss/25 active:scale-95 transition-all shadow-sm cursor-pointer"
+              >
+                Sell Holding
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('schedule')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-300 text-xs font-bold hover:bg-amber-500/25 active:scale-95 transition-all shadow-sm cursor-pointer"
+              >
+                View Scheduled ({scheduledCount})
+              </button>
             </div>
           </div>
-          <BottomNav tab={tab} onTab={setTab} onLock={lock} onTrade={() => setTrade({})} />
+
+          {/* Main Layout Views */}
+          {tab === 'schedule' ? (
+            <div className="w-full">
+              <ScheduledTrades
+                refreshKey={scheduleTick}
+                account={currentAccountId}
+                onScheduleNew={setTrade}
+                onTrade={setTrade}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12 md:gap-5 lg:gap-6">
+              <div className="flex flex-col gap-4 sm:gap-5 md:col-span-7 lg:col-span-8 lg:gap-6">
+                <div className={show('home')}>
+                  <PortfolioCard portfolio={portfolio} pulse={pulse} canTrade={canTrade} onSell={setTrade} />
+                </div>
+                <div className={show('board')}>
+                  <Leaderboard teams={teams} myTeam={activeTeamName} onOpenTeam={setHistoryTeam} />
+                </div>
+              </div>
+              <div className="flex flex-col gap-4 sm:gap-5 md:col-span-5 lg:col-span-4 lg:gap-6">
+                <div className={show('board')}>
+                  <MoversPanel movers={movers} myTeam={activeTeamName} onOpenTeam={setHistoryTeam} />
+                </div>
+                <div className={show('board')}>
+                  <ThreatRadar teams={teams} myTeam={activeTeamName} />
+                </div>
+                <div className={show('report')}>
+                  <ScheduledTrades
+                    refreshKey={scheduleTick}
+                    account={currentAccountId}
+                    onScheduleNew={setTrade}
+                    onTrade={setTrade}
+                  />
+                </div>
+                <div className={show('report')}>
+                  <DailyReport portfolio={portfolio} equity={equity} anchor={anchor} trades={trades} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <BottomNav
+            tab={tab}
+            onTab={setTab}
+            onLock={lock}
+            onTrade={() => setTrade({})}
+            scheduledCount={scheduledCount}
+          />
         </motion.div>
       )}
 

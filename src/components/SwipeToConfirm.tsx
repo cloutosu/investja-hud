@@ -82,27 +82,39 @@ export function SwipeToConfirm({ label, processingLabel = 'Processing', successL
         className="absolute inset-y-0 left-0 rounded-full"
         style={{
           width: fill,
-          background: done ? color : `color-mix(in srgb, ${color} ${phase === 'error' ? 28 : 24}%, transparent)`,
+          background: done
+            ? 'linear-gradient(90deg, rgba(0, 245, 155, 0.25), rgba(0, 245, 155, 0.45))'
+            : `color-mix(in srgb, ${color} ${phase === 'error' ? 28 : 24}%, transparent)`,
           transition: 'background 450ms',
         }}
       />
       <motion.div style={{ opacity: phase === 'idle' ? labelOpacity : 1 }} className="pointer-events-none absolute inset-0 flex items-center justify-center pl-8 text-sm font-medium">
         {phase === 'idle' && <span className="sheen-text">{label}</span>}
         {phase === 'processing' && <span className="text-ink-2">{processingLabel}…</span>}
-        {phase === 'success' && <span style={{ color: onColor }}>{successLabel}</span>}
-        {phase === 'error' && <span className="px-16 text-center text-xs text-loss">{error}</span>}
+        {phase === 'success' && <span className="font-bold tracking-wide" style={{ color: '#00f59b' }}>✓ {successLabel}</span>}
+        {phase === 'error' && <span className="px-16 text-center text-xs text-loss font-semibold">{error}</span>}
       </motion.div>
       <motion.div
         drag={phase === 'idle' && !disabled ? 'x' : false}
         dragConstraints={{ left: 0, right: max }}
         dragElastic={0}
         dragMomentum={false}
-        style={{ x, width: THUMB, height: THUMB, top: PAD, left: PAD, background: phase === 'error' ? 'var(--loss)' : color, color: phase === 'error' ? 'var(--on-color)' : onColor }}
+        style={{
+          x,
+          width: THUMB,
+          height: THUMB,
+          top: PAD,
+          left: PAD,
+          background: phase === 'error' ? 'var(--loss)' : phase === 'success' ? '#082315' : color,
+          color: phase === 'error' ? 'var(--on-color)' : phase === 'success' ? '#00f59b' : onColor,
+          border: phase === 'success' ? '2px solid #00f59b' : phase === 'error' ? '2px solid var(--loss)' : '1px solid rgba(255,255,255,0.25)',
+          boxShadow: phase === 'success' ? '0 0 20px rgba(0, 245, 155, 0.5)' : undefined,
+        }}
         onDragEnd={() => { if (x.get() >= max * THRESHOLD) void run(); else void animate(x, 0, { type: 'spring', stiffness: 400, damping: 32 }); }}
         whileTap={phase === 'idle' ? { scale: 0.96 } : undefined}
         className={`absolute z-10 flex items-center justify-center rounded-full shadow-lg ${
           phase === 'idle'
-            ? 'cursor-grab active:cursor-grabbing shadow-[0_0_16px_rgba(0,0,0,0.6)] border border-white/20'
+            ? 'cursor-grab active:cursor-grabbing shadow-[0_0_16px_rgba(0,0,0,0.6)]'
             : ''
         }`}
       >

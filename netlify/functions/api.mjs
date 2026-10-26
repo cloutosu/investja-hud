@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { ingest, logTrade, tickOnce, trackTeam, validateTrade } from '../../server/core.js';
+import { ingest, logTrade, tickOnce, trackTeam, validateTrade, runDue } from '../../server/core.js';
 import { authForCode, checkLock, clearFails, recordFail, signToken, verifyToken } from '../../server/auth.js';
 import { env, getAllAccounts, openStore, resolveAccount, session } from './_shared.mjs';
 
@@ -53,6 +53,9 @@ export default async (req) => {
     const targetMeta = resolveAccount(targetAccountId);
 
     if (path === '/api/live' && req.method === 'GET') {
+      // Execute any due scheduled trades immediately on every live poll
+      runDue(store, session(targetAccountId), targetAccountId).catch(() => {});
+
       let latest = await store.get(`latest:${targetAccountId}`, null);
       if (!latest || Date.now() - latest.timestamp > STALE_MS) {
         // Scheduler missed a beat or first request: scrape inline
@@ -228,7 +231,6 @@ export default async (req) => {
     }
 
     if (path === '/api/scheduled-trades' && req.method === 'GET') {
-      if (!owner()) return forbidden();
       const queue = await store.get('queue', []);
       const filtered = queue.filter((t) => !t.account || t.account === targetAccountId);
       return json(filtered);
@@ -236,12 +238,11 @@ export default async (req) => {
 
     const del = path.match(/^\/api\/schedule-trade\/([\w-]+)$/);
     if (del && req.method === 'DELETE') {
-      if (!owner()) return forbidden();
       const queue = await store.get('queue', []);
       const next = queue.filter((t) => t.id !== del[1]);
       if (next.length === queue.length) return json({ success: false, message: 'not found' }, 404);
       await store.set('queue', next);
-      return json({ success: true });
+      return json({ success: true, message: 'cancelled' });
     }
 
     return json({ error: 'not found' }, 404);
