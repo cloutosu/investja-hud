@@ -1,0 +1,13 @@
+{
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/investja/poll",
+      "destination": "/api/poll"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

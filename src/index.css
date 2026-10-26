@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .liquid-glass {
+    background: rgba(15, 20, 32, 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .liquid-glass-spotlight {
+    background: linear-gradient(135deg, rgba(0, 245, 155, 0.06) 0%, rgba(15, 20, 32, 0.8) 60%);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(0, 245, 155, 0.35);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 245, 155, 0.12);
+  }
+
+  .liquid-glass-threat {
+    background: linear-gradient(135deg, rgba(255, 59, 105, 0.08) 0%, rgba(20, 15, 24, 0.75) 60%);
+    border: 1px solid rgba(255, 59, 105, 0.35);
+  }
+
+  .animate-float-fade {
+    animation: floatFade 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes floatFade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.05);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(-14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.95);
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 14, 22, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

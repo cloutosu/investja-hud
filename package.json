@@ -1,0 +1,36 @@
+{
+  "name": "investja-terminal",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n web,api \"vite\" \"node --watch --env-file=.env scripts/dev-api.mjs\"",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "mock": "node scripts/mock-investja.js"
+  },
+  "dependencies": {
+    "@fontsource/geist-sans": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@netlify/blobs": "^11.1.6",
+    "cheerio": "^1.2.0",
+    "dexie": "^4.4.7",
+    "framer-motion": "^14.6.0",
+    "lucide-react": "^1.61.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "express": "^5.3.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}

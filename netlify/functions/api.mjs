@@ -1,0 +1,254 @@
+import crypto from 'node:crypto';
+import { ingest, logTrade, tickOnce, trackTeam, validateTrade } from '../../server/core.js';
+import { authForCode, checkLock, clearFails, recordFail, signToken, verifyToken } from '../../server/auth.js';
+import { env, getAllAccounts, openStore, resolveAccount, session } from './_shared.mjs';
+
+const STALE_MS = 3 * 1000;
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const ipOf = (req) => req.headers.get('x-nf-client-connection-ip') || (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+
+export default async (req) => {
+  const url = new URL(req.url);
+  const path = url.pathname.replace(/\/$/, '');
+  const store = openStore();
+  const e = env();
+
+  try {
+    if (path === '/api/health' && req.method === 'GET') {
+      return json({ ok: true, accounts: getAllAccounts() });
+    }
+
+    if (path === '/api/auth' && req.method === 'POST') {
+      const ip = ipOf(req);
+      const mins = await checkLock(store, ip);
+      if (mins) return json({ message: `Too many attempts. Try again in ${mins} min.` }, 429);
+      const body = (await req.json().catch(() => ({}))) ?? {};
+      const { code, account } = body;
+      const authRes = authForCode(e, String(code ?? ''), account);
+      if (!authRes) {
+        await sleep(700);
+        return json({ message: `Incorrect code. ${await recordFail(store, ip)} attempts left.` }, 401);
+      }
+      await clearFails(store, ip);
+      const token = signToken(e, authRes.role, authRes.accountId);
+      return json({
+        token,
+        role: authRes.role,
+        accountId: authRes.accountId,
+        teamName: authRes.team,
+        accounts: getAllAccounts(),
+      });
+    }
+
+    const auth = verifyToken(e, (req.headers.get('authorization') || '').replace(/^Bearer /, ''));
+    if (!auth) return json({ error: 'unauthorized' }, 401);
+    const role = typeof auth === 'object' ? auth.role : auth;
+    const defaultAccountId = typeof auth === 'object' ? auth.accountId : '11780';
+    const owner = () => role === 'owner';
+    const forbidden = () => json({ error: 'owner only' }, 403);
+
+    const targetAccountId = resolveAccount(url.searchParams.get('account') || defaultAccountId).id;
+    const targetMeta = resolveAccount(targetAccountId);
+
+    if (path === '/api/live' && req.method === 'GET') {
+      let latest = await store.get(`latest:${targetAccountId}`, null);
+      if (!latest || Date.now() - latest.timestamp > STALE_MS) {
+        // Scheduler missed a beat or first request: scrape inline
+        await tickOnce(store, session, targetMeta.team, targetAccountId).catch(() => {});
+        latest = await store.get(`latest:${targetAccountId}`, latest);
+      }
+      if (!latest) {
+        latest = await store.get('latest', null);
+      }
+      if (!latest) return json({ error: (await store.get(`status:${targetAccountId}`, null))?.error || 'no data yet' }, 503);
+
+      const movers = await store.get(`movers:${targetAccountId}`, await store.get('movers', null));
+      const status = await store.get(`status:${targetAccountId}`, await store.get('status', null));
+      return json({
+        ...latest,
+        targetAccount: targetMeta,
+        accounts: getAllAccounts(),
+        movers,
+        status,
+      });
+    }
+
+    if (path === '/api/history' && req.method === 'GET') {
+      const points = await store.get(`history:${targetAccountId}`, await store.get('history', []));
+      return json({ points });
+    }
+
+    if (path === '/api/track' && req.method === 'POST') {
+      const { name } = (await req.json().catch(() => ({}))) ?? {};
+      if (typeof name !== 'string' || !name || name.length > 120) return json({ error: 'name required' }, 400);
+      await trackTeam(store, name);
+      return json({ ok: true });
+    }
+
+    if (path === '/api/quote' && req.method === 'GET') {
+      const ticker = (url.searchParams.get('ticker') || '').trim().toUpperCase();
+      const exchange = url.searchParams.get('exchange') || 'Nasdaq';
+      if (!ticker) return json({ error: 'ticker required' }, 400);
+
+      const CAD_PER_USD = 1.43;
+      const isUs = exchange === 'Nasdaq' || exchange === 'NYSE';
+
+      // Check if ticker is in portfolio holdings first
+      const latest = (await store.get(`latest:${targetAccountId}`, null)) ?? (await store.get('latest', null));
+      const held = (latest?.portfolio?.holdings ?? []).find((h) => h.ticker.toUpperCase() === ticker);
+      if (held) {
+        const priceCad = held.currentPrice;
+        const priceUsd = isUs ? Number((priceCad / CAD_PER_USD).toFixed(2)) : null;
+        return json({
+          ticker,
+          exchange: held.exchange || exchange,
+          price: priceCad,
+          priceCad,
+          priceUsd,
+          fxRate: CAD_PER_USD,
+          fxConverted: isUs,
+          todayPrice: held.todayPrice,
+          source: 'investja-portfolio',
+          currency: 'CAD',
+          quoteCurrency: isUs ? 'USD' : 'CAD',
+        });
+      }
+
+      // External market query
+      try {
+        let sym = ticker;
+        if (exchange === 'TSX' && !sym.endsWith('.TO')) sym = `${sym}.TO`;
+        const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+            Accept: 'application/json',
+          },
+          signal: AbortSignal.timeout(6000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const meta = data?.chart?.result?.[0]?.meta;
+          if (meta && typeof meta.regularMarketPrice === 'number') {
+            const rawPrice = Number(meta.regularMarketPrice.toFixed(2));
+            // Quotes from NYSE and NASDAQ are converted to CAD using the official InvestJA 1.43 rate!
+            const priceCad = isUs ? Number((rawPrice * CAD_PER_USD).toFixed(2)) : rawPrice;
+            const priceUsd = isUs ? rawPrice : Number((rawPrice / CAD_PER_USD).toFixed(2));
+            const rawPrev = Number((meta.previousClose || meta.chartPreviousClose || meta.regularMarketPrice).toFixed(2));
+            const prevCloseCad = isUs ? Number((rawPrev * CAD_PER_USD).toFixed(2)) : rawPrev;
+
+            return json({
+              ticker,
+              exchange,
+              price: priceCad, // Primary price in CAD matching InvestJA portfolio & cash
+              priceCad,
+              priceUsd: isUs ? priceUsd : null,
+              fxRate: CAD_PER_USD,
+              fxConverted: isUs,
+              prevClose: prevCloseCad,
+              currency: 'CAD',
+              quoteCurrency: isUs ? 'USD' : 'CAD',
+              source: 'market',
+            });
+          }
+        }
+      } catch {
+        // Fallback
+      }
+
+      return json({
+        ticker,
+        exchange,
+        price: null,
+        fxRate: CAD_PER_USD,
+        message: 'Enter price manually or execute market order',
+      });
+    }
+
+    if (path === '/api/trade' && req.method === 'POST') {
+      if (!owner()) return forbidden();
+      const body = await req.json().catch(() => null);
+      const v = validateTrade(body);
+      if (v.error) return json({ success: false, message: v.error }, 400);
+
+      const tradeAccount = resolveAccount(body?.account || targetAccountId);
+      const client = session(tradeAccount.id);
+      await client.login();
+      const result = await client.trade(v.trade);
+      if (result.success) {
+        await logTrade(store, v.trade, 'manual', tradeAccount.id);
+        // Refresh the targeted account numbers immediately
+        await ingest(store, await client.scrape(), Date.now(), tradeAccount.team, tradeAccount.id).catch((err) =>
+          console.error('[post-trade ingest]', err.message)
+        );
+      }
+      return json({
+        ...result,
+        account: tradeAccount.id,
+        team: tradeAccount.team,
+        command: `curl -X POST "https://investja.org/private/game/${v.trade.action}" -H "X-Requested-With: XMLHttpRequest" -d "exchange=${v.trade.exchange}&ticker=${v.trade.ticker}&quantity=${v.trade.quantity}&action=confirm"`,
+        payload: {
+          action: v.trade.action,
+          exchange: v.trade.exchange,
+          ticker: v.trade.ticker,
+          quantity: v.trade.quantity,
+          account: tradeAccount.id,
+          timestamp: Date.now(),
+        },
+      });
+    }
+
+    if (path === '/api/schedule-trade' && req.method === 'POST') {
+      if (!owner()) return forbidden();
+      const body = await req.json().catch(() => null);
+      const v = validateTrade(body);
+      if (v.error) return json({ success: false, message: v.error }, 400);
+      const executeAt = Number(body.executeAt);
+      if (!Number.isFinite(executeAt) || executeAt <= 0) return json({ success: false, message: 'executeAt must be unix milliseconds' }, 400);
+
+      const tradeAccount = resolveAccount(body?.account || targetAccountId);
+      const queue = await store.get('queue', []);
+      const task = {
+        id: crypto.randomUUID(),
+        ...v.trade,
+        account: tradeAccount.id,
+        team: tradeAccount.team,
+        executeAt,
+        createdAt: Date.now(),
+        attempts: 0,
+        status: 'pending',
+        lastError: null,
+        nextAttemptAt: 0,
+      };
+      queue.push(task);
+      queue.sort((a, b) => a.executeAt - b.executeAt);
+      await store.set('queue', queue);
+      return json({ success: true, message: 'scheduled', task }, 201);
+    }
+
+    if (path === '/api/scheduled-trades' && req.method === 'GET') {
+      if (!owner()) return forbidden();
+      const queue = await store.get('queue', []);
+      const filtered = queue.filter((t) => !t.account || t.account === targetAccountId);
+      return json(filtered);
+    }
+
+    const del = path.match(/^\/api\/schedule-trade\/([\w-]+)$/);
+    if (del && req.method === 'DELETE') {
+      if (!owner()) return forbidden();
+      const queue = await store.get('queue', []);
+      const next = queue.filter((t) => t.id !== del[1]);
+      if (next.length === queue.length) return json({ success: false, message: 'not found' }, 404);
+      await store.set('queue', next);
+      return json({ success: true });
+    }
+
+    return json({ error: 'not found' }, 404);
+  } catch (err) {
+    console.error(`[${req.method} ${path}]`, err.message);
+    return json({ error: err.message }, 502);
+  }
+};
+
+export const config = { path: '/api/*' };
