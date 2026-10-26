@@ -1,5 +1,6 @@
 // Node 20 ESM — investja.org client, trade queue and market-data ingestion (Netlify Functions + dev server)
 import { parseDashboard, parseLeaderboard, looksLikeLoginPage, extractErrorMessage, parseTradeConfirmation } from './parsers.js';
+import { runTakeProfit } from './takeprofit.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 export const EXCHANGES = new Set(['Nasdaq', 'NYSE', 'TSX']);
@@ -337,7 +338,9 @@ export async function tickOnce(store, makeSession, target = 'Rahman Power Square
     const client = typeof makeSession === 'function' ? makeSession(accountId) : makeSession;
     await client.login();
     const trades = await runDue(store, client, accountId);
-    const live = await client.scrape();
+    let live = await client.scrape();
+    const tp = await runTakeProfit(store, client, live.dashboard.holdings, accountId, logTrade);
+    if (tp.sold) live = await client.scrape(); // positions changed, ingest the post-sell numbers
     await ingest(store, live, Date.now(), target, accountId);
     await store.set(`status:${accountId}`, { at: Date.now(), error: null, window: windowStatus });
     if (accountId === '11780') {

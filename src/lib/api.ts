@@ -6,6 +6,8 @@ import type {
   Role,
   ScheduleBody,
   ScheduledTrade,
+  TakeProfitBody,
+  TakeProfitRule,
   TradeBody,
   TradeResult,
 } from '../types';
@@ -96,5 +98,9 @@ export const api = {
   scheduleTrade: (b: ScheduleBody) => request<TradeResult>('/api/schedule-trade', body('POST', b)),
   scheduledTrades: (account?: string) =>
     request<ScheduledTrade[]>(`/api/scheduled-trades${account ? `?account=${encodeURIComponent(account)}` : ''}`),
+  armTakeProfit: (b: TakeProfitBody) => request<TradeResult>('/api/take-profit', body('POST', b)),
+  takeProfit: (account?: string) =>
+    request<TakeProfitRule[]>(`/api/take-profit${account ? `?account=${encodeURIComponent(account)}` : ''}`),
+  disarmTakeProfit: (id: string) => request<TradeResult>(`/api/take-profit/${id}`, { method: 'DELETE' }),
   cancelScheduled: (id: string) => request<TradeResult>(`/api/schedule-trade/${id}`, { method: 'DELETE' }),
 };

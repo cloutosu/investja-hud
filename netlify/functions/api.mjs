@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { ingest, logTrade, tickOnce, trackTeam, validateTrade, runDue } from '../../server/core.js';
+import { holdReleaseAt, validateRule } from '../../server/takeprofit.js';
 import { authForCode, checkLock, clearFails, recordFail, signToken, verifyToken } from '../../server/auth.js';
 import { env, getAllAccounts, openStore, resolveAccount, session } from './_shared.mjs';
 
@@ -234,6 +235,53 @@ export default async (req) => {
       const queue = await store.get('queue', []);
       const filtered = queue.filter((t) => !t.account || t.account === targetAccountId);
       return json(filtered);
+    }
+
+    if (path === '/api/take-profit' && req.method === 'POST') {
+      if (!owner()) return forbidden();
+      const body = await req.json().catch(() => null);
+      const v = validateRule(body);
+      if (v.error) return json({ success: false, message: v.error }, 400);
+
+      const acc = resolveAccount(body?.account || targetAccountId);
+      const latest = await store.get(`latest:${acc.id}`, null);
+      const held = (latest?.portfolio?.holdings ?? []).find((h) => h.ticker.toUpperCase() === v.rule.ticker);
+      if (!held) return json({ success: false, message: `${v.rule.ticker} is not in this account's holdings` }, 400);
+
+      const log = await store.get(`trades-log:${acc.id}`, []);
+      const rules = await store.get('tp-rules', []);
+      // one live rule per position: re-arming replaces the old one
+      const kept = rules.filter((r) => !(r.account === acc.id && r.ticker === v.rule.ticker && r.status !== 'done'));
+      const rule = {
+        id: crypto.randomUUID(),
+        ...v.rule,
+        account: acc.id,
+        team: acc.team,
+        createdAt: Date.now(),
+        status: 'armed',
+        attempts: 0,
+        lastError: null,
+        holdReleaseAt: holdReleaseAt(log, v.rule.ticker, v.rule.exchange),
+      };
+      kept.push(rule);
+      await store.set('tp-rules', kept);
+      return json({ success: true, message: 'armed', rule }, 201);
+    }
+
+    if (path === '/api/take-profit' && req.method === 'GET') {
+      const rules = await store.get('tp-rules', []);
+      const dayAgo = Date.now() - 24 * 3600 * 1000;
+      return json(rules.filter((r) => r.account === targetAccountId && (r.status !== 'done' || (r.firedAt ?? 0) > dayAgo)));
+    }
+
+    const tpDel = path.match(/^\/api\/take-profit\/([\w-]+)$/);
+    if (tpDel && req.method === 'DELETE') {
+      if (!owner()) return forbidden();
+      const rules = await store.get('tp-rules', []);
+      const next = rules.filter((r) => r.id !== tpDel[1]);
+      if (next.length === rules.length) return json({ success: false, message: 'not found' }, 404);
+      await store.set('tp-rules', next);
+      return json({ success: true, message: 'disarmed' });
     }
 
     const del = path.match(/^\/api\/schedule-trade\/([\w-]+)$/);

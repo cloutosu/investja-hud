@@ -130,3 +130,30 @@ export interface Pulse {
   delta: number;
   ticker: string | null;
 }
+
+export interface TakeProfitBody {
+  exchange: string;
+  ticker: string;
+  quantity: number | 'all';
+  targetPct?: number;
+  targetPrice?: number;
+  account?: string;
+}
+export interface TakeProfitRule {
+  id: string;
+  exchange: string;
+  ticker: string;
+  quantity: number | 'all';
+  targetPct: number | null;
+  targetPrice: number | null;
+  account: string;
+  createdAt: number;
+  status: 'armed' | 'holding' | 'no-position' | 'done';
+  attempts: number;
+  lastError: string | null;
+  holdReleaseAt: number | null;
+  lastPrice?: number;
+  firedAt?: number;
+  soldQuantity?: number;
+  soldPrice?: number;
+}
