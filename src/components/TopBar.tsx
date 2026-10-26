@@ -42,7 +42,7 @@ function greeting() {
 export function ThemeDots() {
   const { id } = useTheme();
   return (
-    <div className="flex items-center gap-1.5 rounded-full border border-line-strong bg-tint/80 p-1 backdrop-blur-md" role="radiogroup" aria-label="Theme">
+    <div className="flex items-center gap-1.5 rounded-full border border-line-strong bg-tint/80 p-1" role="radiogroup" aria-label="Theme">
       {(Object.keys(THEMES) as ThemeId[]).map((t) => (
         <button
           key={t}
@@ -51,7 +51,7 @@ export function ThemeDots() {
           title={THEMES[t].label}
           onClick={() => setTheme(t)}
           className={`h-5 w-5 rounded-full border transition-transform ${id === t ? 'scale-110 border-line-focus shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'}`}
-          style={{ background: t === 'ember' ? 'linear-gradient(135deg,#f26b1d,#3a0f0c)' : t === 'frost' ? 'linear-gradient(135deg,#ffffff,#9aa8b2)' : 'linear-gradient(135deg,#f3d9c8,#c9a48f)' }}
+          style={{ background: t === 'midnight' ? 'linear-gradient(135deg,#7c6cff,#0a0c12)' : t === 'frost' ? 'linear-gradient(135deg,#ffffff,#4f46e5)' : 'linear-gradient(135deg,#f4ece5,#c2410c)' }}
         />
       ))}
     </div>
@@ -60,7 +60,7 @@ export function ThemeDots() {
 
 function Toggle<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
   return (
-    <div className="relative flex rounded-full border border-line-strong bg-tint/60 p-0.5 backdrop-blur-md">
+    <div className="relative flex rounded-full border border-line-strong bg-tint/60 p-0.5">
       {options.map((o) => (
         <button
           key={o.id}
@@ -174,13 +174,13 @@ export function TopBar({
   return (
     <header className="flex flex-col gap-3.5 sm:gap-4">
       {/* Account Switcher Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-line-strong bg-elevated/80 p-2 backdrop-blur-xl shadow-lg shadow-black/20">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2 text-[10px] font-mono uppercase tracking-wider text-ink-3">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-line bg-elevated p-1.5">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="hidden items-center gap-1.5 px-2 text-[10px] sm:flex font-mono uppercase tracking-wider text-ink-3">
             <ArrowRightLeft size={12} className="text-accent" />
-            <span className="font-bold">Switch Account:</span>
+            <span className="hidden font-bold sm:inline">Switch Account:</span>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid w-full grid-cols-2 gap-1.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
             {accountsList.map((acc) => {
               const active =
                 activeAccountId === acc.id ||
@@ -194,7 +194,7 @@ export function TopBar({
                   key={acc.id}
                   type="button"
                   onClick={() => onSwitchAccount?.(acc.id)}
-                  className={`group relative flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  className={`group relative flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 sm:py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                     active
                       ? 'border border-accent/60 bg-accent/15 text-ink shadow-md shadow-accent/10 ring-1 ring-accent/30'
                       : 'border border-line/60 bg-tint/40 text-ink-3 hover:border-line-focus hover:bg-tint hover:text-ink'
@@ -211,7 +211,7 @@ export function TopBar({
                   </span>
                   {teamInfo && (
                     <span
-                      className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${
+                      className={`hidden sm:inline font-mono text-[10px] px-1.5 py-0.5 rounded ${
                         active
                           ? 'bg-accent/25 text-accent font-bold'
                           : 'bg-tint-2 text-ink-3'
@@ -221,7 +221,7 @@ export function TopBar({
                     </span>
                   )}
                   {active && (
-                    <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                    <span className="hidden h-2 w-2 rounded-full bg-accent animate-pulse sm:inline" />
                   )}
                 </button>
               );
@@ -236,32 +236,32 @@ export function TopBar({
       </div>
 
       {/* Top Header Row */}
-      <div className="flex items-center justify-between gap-3 px-1">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-1">
         <div className="min-w-0">
           <div className="label text-[10px] text-ink-3 tracking-widest">{greeting()}</div>
-          <div className="flex items-center gap-2 mt-0.5">
-            <h1 className="truncate text-base font-bold tracking-tight sm:text-xl text-ink">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h1 className="text-lg font-bold tracking-tight sm:text-xl text-ink">
               {teamName}
             </h1>
             {isRank1 ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-bold text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
-                <Trophy size={11} className="text-amber-400" />
+              <span className="inline-flex items-center gap-1 rounded-full border border-warn/40 bg-warn/15 px-2.5 py-0.5 text-[10px] font-bold text-warn">
+                <Trophy size={11} className="text-warn" />
                 RANK #1 CHAMPION
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.15)]">
-                <Trophy size={11} className="text-cyan-400" />
-                RANK #{myRank} <span className="font-mono text-[9px] text-cyan-400/80 font-normal">of {int(totalTeams)}</span>
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[10px] font-bold text-accent">
+                <Trophy size={11} className="text-accent" />
+                RANK #{myRank} <span className="font-mono text-[9px] text-accent font-normal">of {int(totalTeams)}</span>
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
           {/* Live Status Pill */}
-          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-tint/60 px-2.5 py-1 text-[11px] font-mono backdrop-blur-md">
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-tint/60 px-2.5 py-1 text-[11px] font-mono">
             <motion.span
-              className={`h-2 w-2 rounded-full ${live ? 'bg-gain shadow-[0_0_8px_var(--gain)]' : 'bg-warn'}`}
+              className={`h-2 w-2 rounded-full ${live ? 'bg-gain' : 'bg-warn'}`}
               animate={{ opacity: [1, 0.4, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             />
@@ -271,7 +271,7 @@ export function TopBar({
           </span>
 
           {/* Market Status Pill */}
-          <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-mono tracking-wider sm:text-[11px] ${
+          <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-mono tracking-wider sm:text-[11px] ${
             marketOpen
               ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
               : 'border-warn/30 bg-warn/10 text-warn'
@@ -295,7 +295,7 @@ export function TopBar({
 
       {/* Main Spotlight Card */}
       <motion.section
-        className="card-spotlight relative overflow-hidden p-5 sm:p-8"
+        className="card-spotlight relative flex flex-col overflow-hidden p-4 sm:p-8"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -351,8 +351,8 @@ export function TopBar({
                   dayDelta.dollar === 0
                     ? 'border-line bg-tint text-ink-3'
                     : dayDelta.dollar > 0
-                    ? 'border-gain/30 bg-gain/15 text-gain shadow-[0_0_12px_rgba(0,245,155,0.15)]'
-                    : 'border-loss/30 bg-loss/15 text-loss shadow-[0_0_12px_rgba(255,71,102,0.15)]'
+                    ? 'border-gain/30 bg-gain/15 text-gain'
+                    : 'border-loss/30 bg-loss/15 text-loss'
                 }`}>
                   {dayDelta.dollar === 0 ? '— flat today' : `${dayDelta.dollar > 0 ? '▲' : '▼'} ${signedMoney(dayDelta.dollar)} (${signedPct(dayDelta.percent)}) today`}
                 </span>
@@ -363,11 +363,11 @@ export function TopBar({
             </div>
 
             {/* Prominent Bank Action Header Pills */}
-            <div className="flex items-center gap-2">
+            <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center">
               <button
                 type="button"
                 onClick={() => onTrade({ action: 'buy' })}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gain/40 bg-gain/20 text-gain text-xs font-bold hover:bg-gain/30 active:scale-95 transition-all shadow-md shadow-gain/10 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-1.5 rounded-xl border border-gain/40 bg-gain/20 text-gain text-xs font-bold hover:bg-gain/30 active:scale-95 transition-all shadow-md shadow-gain/10 cursor-pointer"
               >
                 <Plus size={14} className="stroke-[3]" />
                 <span>BUY</span>
@@ -375,7 +375,7 @@ export function TopBar({
               <button
                 type="button"
                 onClick={() => onTrade({ action: 'sell' })}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-loss/40 bg-loss/20 text-loss text-xs font-bold hover:bg-loss/30 active:scale-95 transition-all shadow-md shadow-loss/10 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-1.5 rounded-xl border border-loss/40 bg-loss/20 text-loss text-xs font-bold hover:bg-loss/30 active:scale-95 transition-all shadow-md shadow-loss/10 cursor-pointer"
               >
                 <ArrowDownLeft size={14} className="stroke-[3]" />
                 <span>SELL</span>
@@ -383,7 +383,7 @@ export function TopBar({
               <button
                 type="button"
                 onClick={() => (onScheduleTab ? onScheduleTab() : onTrade({ mode: 'schedule' }))}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/20 text-amber-400 text-xs font-bold hover:bg-amber-500/30 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-1.5 rounded-xl border border-warn/40 bg-warn/20 text-warn text-xs font-bold hover:bg-warn/30 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer"
               >
                 <CalendarClock size={14} className="stroke-[2.5]" />
                 <span>SCHEDULE</span>
@@ -393,14 +393,14 @@ export function TopBar({
         </div>
 
         {/* Live Championship & Rank #1 Tracker */}
-        <div className="relative mt-4 rounded-2xl border border-line bg-tint/60 p-3.5 sm:p-4 backdrop-blur-md">
+        <div className="relative mt-4 rounded-2xl border border-line bg-tint/60 p-3.5 max-sm:order-last sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-mono font-bold text-sm shadow-inner ${
                   isRank1
-                    ? 'border border-amber-500/40 bg-amber-500/15 text-amber-400'
-                    : 'border border-cyan-500/40 bg-cyan-500/15 text-cyan-300'
+                    ? 'border border-warn/40 bg-warn/15 text-warn'
+                    : 'border border-cyan-500/40 bg-cyan-500/15 text-accent'
                 }`}
               >
                 #{myRank}
@@ -441,7 +441,7 @@ export function TopBar({
               {teamAhead && (
                 <div className="flex flex-col items-end border-l border-line pl-3.5">
                   <span className="text-[10px] uppercase tracking-wider text-ink-3 font-medium">To Overtake #{myRank - 1}</span>
-                  <span className="num font-extrabold text-sm text-amber-400">+{money(gapToAhead)}</span>
+                  <span className="num font-extrabold text-sm text-warn">+{money(gapToAhead)}</span>
                   <span className="text-[10px] font-mono text-ink-3 truncate max-w-[110px]">{teamAhead.name}</span>
                 </div>
               )}
@@ -453,12 +453,12 @@ export function TopBar({
             <div className="mt-3 pt-2.5 border-t border-line/40">
               <div className="flex justify-between items-center text-[10px] font-mono text-ink-3 mb-1">
                 <span>You: <strong className="text-ink">{money(currentEq)}</strong></span>
-                <span className="text-cyan-400 font-semibold">{progressToRank1.toFixed(1)}% of #1 Benchmark</span>
-                <span>#1: <strong className="text-amber-400">{money(rank1?.equity ?? 0)}</strong></span>
+                <span className="text-accent font-semibold">{progressToRank1.toFixed(1)}% of #1 Benchmark</span>
+                <span>#1: <strong className="text-warn">{money(rank1?.equity ?? 0)}</strong></span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-tint-2 border border-line/60">
                 <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-amber-400 shadow-[0_0_8px_rgba(52,211,153,0.3)]"
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-amber-400"
                   initial={{ width: 0 }}
                   animate={{ width: `${progressToRank1}%` }}
                   transition={{ duration: 1, ease: 'easeOut' }}
@@ -478,7 +478,7 @@ export function TopBar({
           {(['1m', '5m', '15m', '1h', '6h', '24h'] as MoverKey[]).map((k) => {
             const m = mine[k];
             return (
-              <div key={k} className="rounded-2xl border border-line bg-tint/60 px-3 py-2 backdrop-blur-md transition-colors hover:border-line-focus">
+              <div key={k} className="rounded-2xl border border-line bg-tint/60 px-3 py-2 transition-colors hover:border-line-focus">
                 <div className="label text-[9px] text-ink-3 font-semibold">{k}</div>
                 <div className={`num mt-1 text-xs font-bold ${!m ? 'text-ink-3' : m.delta > 0 ? 'text-gain' : m.delta < 0 ? 'text-loss' : 'text-ink-3'}`}>
                   {m ? signedMoney(m.delta, Math.abs(m.delta) >= 1000 ? 0 : 2) : '—'}
@@ -489,10 +489,10 @@ export function TopBar({
         </div>
 
         {/* Bank-Styled Trade Deck */}
-        <div className="relative mt-6 border-t border-line/60 pt-5">
+        <div className="relative mt-6 hidden border-t border-line/60 pt-5 sm:block">
           <div className="text-[11px] font-mono uppercase tracking-wider text-ink-3 mb-3 flex items-center justify-between">
             <span className="font-semibold text-ink-2">Trading Desk Execution</span>
-            {!canTrade && <span className="text-warn text-[10px]">🔒 View Mode (Unlock with PIN 455535 to trade)</span>}
+            {!canTrade && <span className="text-warn text-[10px]">🔒 View mode · unlock with the owner PIN to trade</span>}
           </div>
           <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
             {/* BUY BUTTON */}
@@ -501,7 +501,7 @@ export function TopBar({
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onTrade({ action: 'buy' })}
-              className="group relative flex flex-col items-center justify-center gap-2 rounded-2xl border border-gain/40 bg-gradient-to-b from-gain/20 via-gain/10 to-transparent p-3 sm:p-4 text-center shadow-lg shadow-gain/10 backdrop-blur-md transition-all hover:border-gain hover:from-gain/30 active:scale-95 cursor-pointer"
+              className="group relative flex flex-col items-center justify-center gap-2 rounded-2xl border border-gain/40 bg-gradient-to-b from-gain/20 via-gain/10 to-transparent p-3 sm:p-4 text-center shadow-lg shadow-gain/10 transition-all hover:border-gain hover:from-gain/30 active:scale-95 cursor-pointer"
             >
               <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gain text-black font-extrabold shadow-md shadow-gain/30 group-hover:scale-105 transition-transform">
                 <Plus size={22} className="stroke-[3]" />
@@ -518,7 +518,7 @@ export function TopBar({
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onTrade({ action: 'sell' })}
-              className="group relative flex flex-col items-center justify-center gap-2 rounded-2xl border border-loss/40 bg-gradient-to-b from-loss/20 via-loss/10 to-transparent p-3 sm:p-4 text-center shadow-lg shadow-loss/10 backdrop-blur-md transition-all hover:border-loss hover:from-loss/30 active:scale-95 cursor-pointer"
+              className="group relative flex flex-col items-center justify-center gap-2 rounded-2xl border border-loss/40 bg-gradient-to-b from-loss/20 via-loss/10 to-transparent p-3 sm:p-4 text-center shadow-lg shadow-loss/10 transition-all hover:border-loss hover:from-loss/30 active:scale-95 cursor-pointer"
             >
               <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-loss text-white font-extrabold shadow-md shadow-loss/30 group-hover:scale-105 transition-transform">
                 <ArrowDownLeft size={22} className="stroke-[3]" />
@@ -535,14 +535,14 @@ export function TopBar({
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => (onScheduleTab ? onScheduleTab() : onTrade({ mode: 'schedule' }))}
-              className="group relative flex flex-col items-center justify-center gap-2 rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-500/20 via-amber-500/10 to-transparent p-3 sm:p-4 text-center shadow-lg shadow-amber-500/10 backdrop-blur-md transition-all hover:border-amber-400 hover:from-amber-500/30 active:scale-95 cursor-pointer"
+              className="group relative flex flex-col items-center justify-center gap-2 rounded-2xl border border-warn/40 bg-gradient-to-b from-amber-500/20 via-amber-500/10 to-transparent p-3 sm:p-4 text-center shadow-lg shadow-amber-500/10 transition-all hover:border-amber-400 hover:from-amber-500/30 active:scale-95 cursor-pointer"
             >
               <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-black font-extrabold shadow-md shadow-amber-500/30 group-hover:scale-105 transition-transform">
                 <CalendarClock size={22} className="stroke-[2.5]" />
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-xs sm:text-sm font-bold text-ink tracking-wide uppercase">SCHEDULE</span>
-                <span className="text-[10px] font-mono text-amber-400 hidden sm:inline font-semibold">Time Trigger</span>
+                <span className="text-[10px] font-mono text-warn hidden sm:inline font-semibold">Time Trigger</span>
               </div>
             </motion.button>
           </div>
@@ -567,7 +567,7 @@ export function TopBar({
             extra: (
               <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-tint-2">
                 <motion.div
-                  className={`h-full rounded-full ${loanHot ? 'bg-loss shadow-[0_0_8px_var(--loss)]' : 'bg-warn shadow-[0_0_6px_var(--warn)]'}`}
+                  className={`h-full rounded-full ${loanHot ? 'bg-loss' : 'bg-warn'}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${loanPct}%` }}
                   transition={{ duration: 0.8 }}
@@ -585,7 +585,7 @@ export function TopBar({
           },
           {
             label: 'Open Positions',
-            icon: <Layers size={14} className="text-cyan-400" />,
+            icon: <Layers size={14} className="text-accent" />,
             value: int(positions),
             sub: `${positions} Equities Allocated`,
             extra: null

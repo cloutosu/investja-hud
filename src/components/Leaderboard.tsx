@@ -54,7 +54,7 @@ const Row = memo(function Row({ team, isMe, animate, onOpen }: RowProps) {
             {team.name}
           </span>
           {isMe && (
-            <span className="num rounded-full bg-gain px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-black shadow-[0_0_10px_rgba(0,245,155,0.4)]">
+            <span className="num rounded-full bg-gain px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-black">
               YOUR TEAM
             </span>
           )}
@@ -205,7 +205,7 @@ export function Leaderboard({ teams, myTeam, onOpenTeam }: Props) {
       {/* Leaderboard Table */}
       <div className={`overflow-x-auto rounded-xl border border-line ${showAll ? 'max-h-[70vh]' : ''}`}>
         <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10 bg-elevated/95 backdrop-blur-md border-b border-line">
+          <thead className="sticky top-0 z-10 bg-elevated border-b border-line">
             <tr>
               <Th label="Rank" k="rank" sort={sort} dir={dir} onSort={onSort} className="pl-3 sm:pl-4" />
               <Th label="Team" sort={sort} dir={dir} onSort={onSort} className="pl-2" />

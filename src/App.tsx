@@ -203,7 +203,7 @@ export default function App() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.35 }}
-          className="mx-auto flex min-h-screen max-w-7xl flex-col gap-4 p-3 pb-24 sm:gap-5 sm:p-5 md:p-6 lg:p-8"
+          className="mx-auto flex min-h-screen max-w-7xl flex-col gap-4 p-3 pb-28 sm:gap-5 sm:p-5 sm:pb-28 md:p-6 lg:p-8 md:pb-8"
         >
           {bannerWarn && (
             <div className="rounded-2xl border border-loss/40 bg-loss/10 p-3 text-xs text-loss font-mono">
@@ -287,7 +287,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setTab('schedule')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-300 text-xs font-bold hover:bg-amber-500/25 active:scale-95 transition-all shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-warn/40 bg-warn/15 text-warn text-xs font-bold hover:bg-warn/25 active:scale-95 transition-all shadow-sm cursor-pointer"
               >
                 View Scheduled ({scheduledCount})
               </button>

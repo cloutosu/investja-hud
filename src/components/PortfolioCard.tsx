@@ -143,7 +143,7 @@ export function PortfolioCard({ portfolio, pulse, canTrade, onSell }: Props) {
                 </div>
 
                 {/* Right: Total Value, Profit/Loss Pill, & Trade Actions */}
-                <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+                <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:ml-auto sm:justify-end sm:gap-4">
                   <div className="text-right flex flex-col items-end">
                     <div className="num font-bold text-sm text-ink">{money(h.totalValue)}</div>
                     <div className="num text-[11px] text-ink-3">@{money(h.currentPrice)}</div>
@@ -167,7 +167,7 @@ export function PortfolioCard({ portfolio, pulse, canTrade, onSell }: Props) {
                   {canTrade && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
-                        className="btn text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gain/40 text-gain hover:bg-gain/15 transition-all active:scale-95 flex items-center gap-1 shadow-sm cursor-pointer"
+                        className="btn text-xs font-semibold px-3.5 py-2.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-gain/40 text-gain hover:bg-gain/15 transition-all active:scale-95 flex items-center gap-1 shadow-sm cursor-pointer"
                         onClick={() =>
                           onSell({ action: 'buy', exchange: String(h.exchange), ticker: h.ticker, quantity: 100 })
                         }
@@ -176,7 +176,7 @@ export function PortfolioCard({ portfolio, pulse, canTrade, onSell }: Props) {
                         <Plus size={12} /> Buy
                       </button>
                       <button
-                        className={`btn text-xs font-semibold px-2.5 py-1.5 rounded-xl border transition-all active:scale-95 flex items-center gap-1 cursor-pointer ${
+                        className={`btn text-xs font-semibold px-3.5 py-2.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all active:scale-95 flex items-center gap-1 cursor-pointer ${
                           held ? 'opacity-60 border-warn/40 text-warn bg-warn/10' : 'border-loss/40 text-loss hover:bg-loss/15'
                         }`}
                         disabled={held}
