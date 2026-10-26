@@ -26,17 +26,24 @@ interface Props {
   portfolio: Portfolio | null;
   pulse: Pulse | null;
   canTrade: boolean;
+  /** server-side hold releases (ticker -> epoch ms); merged with this device's own buy record */
+  holds?: Record<string, number>;
   onSell: (init: TradeInit) => void;
 }
 
-export function PortfolioCard({ portfolio, pulse, canTrade, onSell }: Props) {
+export function PortfolioCard({ portfolio, pulse, canTrade, holds = {}, onSell }: Props) {
   const [now, setNow] = useState(Date.now());
   const [dot, setDot] = useState<{ ticker: string; gain: boolean } | null>(null);
 
+  const buys = readBuys();
+  const releaseOf = (ticker: string) => Math.max(holds[ticker] ?? 0, (buys[ticker] ?? 0) + (buys[ticker] ? HOLD_MS : 0));
+  const anyHeld = (portfolio?.holdings ?? []).some((h) => releaseOf(h.ticker) > now);
+
+  // tick every second only while a countdown is on screen
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 15000);
+    const id = setInterval(() => setNow(Date.now()), anyHeld ? 1000 : 15000);
     return () => clearInterval(id);
-  }, []);
+  }, [anyHeld]);
 
   useEffect(() => {
     if (!pulse?.ticker) return;
@@ -54,7 +61,6 @@ export function PortfolioCard({ portfolio, pulse, canTrade, onSell }: Props) {
   const cash = portfolio?.cash ?? 0;
   const loan = portfolio?.loan ?? 0;
   const equity = holdingsTotal + cash - loan;
-  const buys = readBuys();
 
   return (
     <section className="card p-4 sm:p-6">
@@ -97,8 +103,13 @@ export function PortfolioCard({ portfolio, pulse, canTrade, onSell }: Props) {
       <div className="space-y-2.5">
         <AnimatePresence initial={false}>
           {holdings.map((h) => {
-            const holdUntil = (buys[h.ticker] ?? 0) + HOLD_MS;
+            const holdUntil = releaseOf(h.ticker);
             const held = holdUntil > now;
+            const everHeld = holdUntil > 0;
+            const heldFor = Math.max(0, holdUntil - now);
+            const holdPct = held ? Math.min(100, ((HOLD_MS - heldFor) / HOLD_MS) * 100) : 100;
+            const mm = String(Math.floor(heldFor / 60000)).padStart(2, '0');
+            const ss = String(Math.floor((heldFor % 60000) / 1000)).padStart(2, '0');
             const weight = equity > 0 ? ((h.totalValue / equity) * 100).toFixed(1) : '0';
             const hasReturn = h.returnDollar !== undefined;
             const isProfit = (h.returnDollar ?? 0) > 0;
@@ -139,6 +150,23 @@ export function PortfolioCard({ portfolio, pulse, canTrade, onSell }: Props) {
                       {h.avgBuyPrice ? ` @ avg ${money(h.avgBuyPrice)}` : ''} ·{' '}
                       <span className="text-ink-2 font-medium">{weight}%</span> weight
                     </div>
+                    {everHeld && (
+                      held ? (
+                        <div className="mt-1.5 w-full max-w-[220px]" title={`Sellable at ${etTime(holdUntil)} ET`}>
+                          <div className="flex items-center justify-between text-[10px] font-semibold text-warn">
+                            <span className="inline-flex items-center gap-1"><Clock size={10} /> SELL IN</span>
+                            <span className="num">{mm}:{ss}</span>
+                          </div>
+                          <div className="mt-1 h-1 overflow-hidden rounded-full bg-tint-2">
+                            <div className="h-full rounded-full bg-warn transition-[width] duration-1000 ease-linear" style={{ width: `${holdPct}%` }} />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-gain/40 bg-gain/15 px-2 py-0.5 text-[10px] font-bold text-gain">
+                          <span className="orb h-1.5 w-1.5 rounded-full bg-gain" /> SELL READY
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
 
@@ -190,7 +218,7 @@ export function PortfolioCard({ portfolio, pulse, canTrade, onSell }: Props) {
                             <Clock size={11} /> Held
                           </>
                         ) : (
-                          'Sell'
+                          everHeld ? 'Sell ✓' : 'Sell'
                         )}
                       </button>
                     </div>

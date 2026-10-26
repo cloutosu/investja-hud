@@ -46,6 +46,7 @@ export default function App() {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [movers, setMovers] = useState<MoversData | null>(null);
   const [trades, setTrades] = useState<{ buys: number; sells: number } | null>(null);
+  const [holds, setHolds] = useState<Record<string, number>>({});
   const [syncedAt, setSyncedAt] = useState<number | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +123,7 @@ export default function App() {
       setAnchor(d.anchor);
       setMovers(d.movers);
       setTrades(d.trades);
+      setHolds(d.holds ?? {});
       setSyncedAt(d.timestamp);
       api.history(targetAcc).then((h) => setHistory(h.points)).catch(() => {});
     } catch (e) {
@@ -309,7 +311,7 @@ export default function App() {
             <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-12 md:gap-5 lg:gap-6">
               <div className="flex flex-col gap-4 sm:gap-5 md:col-span-7 lg:col-span-8 lg:gap-6">
                 <div className={show('home')}>
-                  <PortfolioCard portfolio={portfolio} pulse={pulse} canTrade={canTrade} onSell={setTrade} />
+                  <PortfolioCard portfolio={portfolio} pulse={pulse} canTrade={canTrade} holds={holds} onSell={setTrade} />
                 </div>
                 <div className={show('board')}>
                   <Leaderboard teams={teams} myTeam={activeTeamName} onOpenTeam={setHistoryTeam} />
