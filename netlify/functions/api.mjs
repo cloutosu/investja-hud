@@ -3,9 +3,10 @@ import { ingest, logTrade, tickOnce, trackTeam, validateTrade, runDue } from '..
 import { holdReleaseAt, rulesFromExits, validateRule } from '../../server/takeprofit.js';
 import { pushEvent } from '../../server/alerts.js';
 import { authForCode, checkLock, clearFails, recordFail, signToken, verifyToken } from '../../server/auth.js';
-import { env, getAllAccounts, openStore, resolveAccount, session } from './_shared.mjs';
+import { env, getAllAccounts, openStore, publicAccount, resolveAccount, session } from './_shared.mjs';
 
-const STALE_MS = 3 * 1000;
+// the 1-minute tick keeps data fresh; only scrape inline when it is clearly missing a beat
+const STALE_MS = Number(process.env.STALE_MS || 90 * 1000);
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -81,7 +82,7 @@ export default async (req) => {
         ...latest,
         holds,
         events: (await store.get(`events:${targetAccountId}`, [])).slice(-20),
-        targetAccount: targetMeta,
+        targetAccount: publicAccount(targetMeta),
         accounts: getAllAccounts(),
         movers,
         status,

@@ -1,5 +1,6 @@
 import { getStore } from '@netlify/blobs';
 import { makeClient } from '../../server/core.js';
+import { openFileStore } from '../../server/filestore.js';
 
 export const env = () => process.env;
 export const TARGET = (accountId = '11780') => resolveAccount(accountId).team;
@@ -24,8 +25,11 @@ export function resolveAccount(accId = '11780') {
   };
 }
 
+// Never send the investja login to a browser: only what the UI needs to label an account.
+export const publicAccount = ({ id, displayUser, team }) => ({ id, displayUser, team });
+
 export function getAllAccounts() {
-  return [resolveAccount('11780'), resolveAccount('11778')];
+  return [resolveAccount('11780'), resolveAccount('11778')].map(publicAccount);
 }
 
 const clientSessions = new Map();
@@ -54,7 +58,11 @@ const memStore = {
   list: async (prefix) => [...mem.keys()].filter((k) => k.startsWith(prefix)),
 };
 
+let fileStore = null;
+
 export function openStore() {
+  // STORE_DIR set = running as the standalone server (not on Netlify): one shared durable store
+  if (process.env.STORE_DIR) return (fileStore ??= openFileStore(process.env.STORE_DIR));
   try {
     const s = getStore({ name: 'investja', consistency: 'strong' });
     return {
